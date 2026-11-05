@@ -1,5 +1,6 @@
 import { COMMON_FLAGS } from './shared-flags.js';
 import type { CommandDefinition } from './types.js';
+import { HUBSPEC_COMMANDS } from '../../../completions.js';
 export const COMMAND_REGISTRY: CommandDefinition[] = [
   {
     name: 'init',
@@ -64,15 +65,8 @@ export const COMMAND_REGISTRY: CommandDefinition[] = [
     ],
   },
   {
-    name: 'install',
-    description: 'Install the standalone hubspec, which runs without Node.js (latest release unless [version] is given)',
-    acceptsPositional: true,
-    positionals: [{ name: 'version', optional: true }],
-    flags: [],
-  },
-  {
     name: 'version',
-    description: 'Report the installed OpenSpec version and update availability',
+    description: 'Report the installed hubspec version',
     flags: [
       COMMON_FLAGS.json,
       {
@@ -200,7 +194,7 @@ export const COMMAND_REGISTRY: CommandDefinition[] = [
   },
   {
     name: 'archive',
-    description: 'Archive a completed change and update main specs',
+    description: 'Archive a verified change and update main specs',
     acceptsPositional: true,
     positionalType: 'change-id',
     positionals: [{ name: 'change-name', type: 'change-id', optional: true }],
@@ -217,6 +211,10 @@ export const COMMAND_REGISTRY: CommandDefinition[] = [
       {
         name: 'no-validate',
         description: 'Skip validation (not recommended)',
+      },
+      {
+        name: 'no-gate',
+        description: 'Archive without the verification gate',
       },
       {
         name: 'json',
@@ -506,19 +504,6 @@ export const COMMAND_REGISTRY: CommandDefinition[] = [
           },
           COMMON_FLAGS.json,
         ],
-      },
-    ],
-  },
-  {
-    name: 'feedback',
-    description: 'Submit feedback about OpenSpec',
-    acceptsPositional: true,
-    positionals: [{ name: 'message' }],
-    flags: [
-      {
-        name: 'body',
-        description: 'Detailed description for the feedback',
-        takesValue: true,
       },
     ],
   },
@@ -838,4 +823,6 @@ export const COMMAND_REGISTRY: CommandDefinition[] = [
       },
     ],
   },
+  // hubspec: its own commands.
+  ...HUBSPEC_COMMANDS,
 ];

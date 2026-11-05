@@ -3,9 +3,10 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 
 // Constants
-export const GLOBAL_CONFIG_DIR_NAME = 'openspec';
+// hubspec: its own config, apart from an OpenSpec installed next to it.
+export const GLOBAL_CONFIG_DIR_NAME = 'hubspec';
 export const GLOBAL_CONFIG_FILE_NAME = 'config.json';
-export const GLOBAL_DATA_DIR_NAME = 'openspec';
+export const GLOBAL_DATA_DIR_NAME = 'hubspec';
 
 // TypeScript types
 export type Profile = 'core' | 'custom';

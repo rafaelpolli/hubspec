@@ -1,0 +1,9 @@
+{
+  "name": "hubspec",
+  "version": "0.4.0",
+  "description": "O fluxo do OpenSpec Studio no Claude Code: explorar antes da change, checkpoint de decisões, verificação cenário→teste (PASS/CONCERNS/FAIL) e archive com portão.",
+  "author": { "name": "rafaelpolli" },
+  "repository": "https://github.com/rafaelpolli/hubspec",
+  "license": "MIT",
+  "keywords": ["openspec", "spec-driven", "verification"]
+}

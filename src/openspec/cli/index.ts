@@ -1,7 +1,6 @@
 import { Command, Option } from 'commander';
-import { createRequire } from 'module';
+import { CLI_NAME, PACKAGE_VERSION } from '../../package.js';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { existsSync, promises as fs } from 'fs';
 import { AI_TOOLS, TOOL_ID_ALIASES } from '../core/config.js';
 import type { ArchiveOptions } from '../core/archive.js';
@@ -69,8 +68,8 @@ async function failWithError(
 }
 
 const program = new Command();
-const require = createRequire(import.meta.url);
-const { version } = require('../../package.json');
+// hubspec: the version is hubspec's.
+const version = PACKAGE_VERSION;
 
 /**
  * Get the full command path for nested commands.
@@ -82,14 +81,14 @@ export function getCommandPath(command: Command): string {
 
   while (current) {
     const name = current.name();
-    // Skip the root 'openspec' command
-    if (name && name !== 'openspec') {
+    // Skip the root command
+    if (name && name !== CLI_NAME) {
       names.unshift(name);
     }
     current = current.parent;
   }
 
-  return names.join(':') || 'openspec';
+  return names.join(':') || CLI_NAME;
 }
 
 /**
@@ -145,8 +144,8 @@ export function shouldDeferCompletionTip(command: Command, stderrIsTty: boolean)
 }
 
 program
-  .name('openspec')
-  .description('AI-native system for spec-driven development')
+  .name(CLI_NAME)
+  .description('OpenSpec (spec-driven development) with multi-repo hubs and a verification gate')
   .version(version);
 
 // Global options
@@ -154,7 +153,7 @@ program.option('--no-color', 'Disable color output');
 
 program
   .command('version')
-  .description('Report the installed OpenSpec version and update availability')
+  .description('Report the installed hubspec version')
   .option('--json', 'Output as JSON')
   .option('--check', 'Check the registry for a newer version')
   .action(async (options: { json?: boolean; check?: boolean }) => {
@@ -194,7 +193,7 @@ program
     console.log(buildVersionReportLines(version, install, update, command).join('\n'));
   });
 
-// Apply global flags and telemetry before any command runs
+// Apply global flags before any command runs (hubspec: no telemetry)
 // Note: preAction receives (thisCommand, actionCommand) where:
 // - thisCommand: the command where hook was added (root program)
 // - actionCommand: the command actually being executed (subcommand)
@@ -204,29 +203,10 @@ program.hook('preAction', async (thisCommand, actionCommand) => {
     process.env.NO_COLOR = '1';
   }
 
-  // `__complete` runs on every Tab press, with stderr sent to /dev/null by the
-  // generated scripts. Tracking it would hold each press open for the request,
-  // and the first-run notice would be marked seen without anyone reading it.
-  if (isTabCompletionRun(getCommandPath(actionCommand))) {
-    return;
-  }
-
-  // Show first-run telemetry notice (if not seen). It's written to stderr, so it
-  // never pollutes stdout — but --json runs still defer it (see isJsonRun) so the
-  // very first invocation stays free of any incidental output on either stream.
-  const { maybeShowTelemetryNotice, trackCommand } = await import('../telemetry/index.js');
-  await maybeShowTelemetryNotice({ silent: isJsonRun(actionCommand) });
-
-  // Track command execution (use actionCommand to get the actual subcommand)
-  const commandPath = getCommandPath(actionCommand);
-
-  await trackCommand(commandPath, version);
 });
 
-// Shutdown telemetry after command completes
 program.hook('postAction', async (_thisCommand, actionCommand) => {
-  // Nothing to flush (preAction tracked nothing), and the tip is always
-  // deferred for completion runs, so skip loading either module.
+  // The tip is always deferred for completion runs, so skip loading it.
   if (isTabCompletionRun(getCommandPath(actionCommand))) {
     return;
   }
@@ -237,17 +217,10 @@ program.hook('postAction', async (_thisCommand, actionCommand) => {
   // screen. Deferred — not consumed — whenever nobody would read it: JSON runs,
   // `hubspec completion ...`, and a stderr that is not a terminal (agents and
   // pipes would otherwise silently burn the user's one-shot tip).
-  try {
-    const { maybeShowCompletionTip } = await import('../core/completion-tip.js');
-    await maybeShowCompletionTip({
-      silent: shouldDeferCompletionTip(actionCommand, Boolean(process.stderr.isTTY)),
-    });
-  } finally {
-    // The flush runs even if the hint throws: parse() is synchronous, so a
-    // rejection here has no catch anywhere above it.
-    const { shutdown } = await import('../telemetry/index.js');
-    await shutdown();
-  }
+  const { maybeShowCompletionTip } = await import('../core/completion-tip.js');
+  await maybeShowCompletionTip({
+    silent: shouldDeferCompletionTip(actionCommand, Boolean(process.stderr.isTTY)),
+  });
 });
 
 const availableToolIds = AI_TOOLS
@@ -299,6 +272,9 @@ program
         copilotCloud: options?.copilotCloud,
       });
       await initCommand.execute(targetPath);
+      // hubspec: its skills, in every tool init just set up.
+      const { installHubspecSkills } = await import('../../setup.js');
+      installHubspecSkills(resolvedPath);
     } catch (error) {
       await failWithError(error);
       process.exit(1);
@@ -431,10 +407,9 @@ program
         displayCliUpdateNote(latestVersion, targetPath);
       }
 
-      // Once per machine, a package-manager user hears the standalone install
-      // exists. Offered, never pushed; deferred when stderr is not a terminal.
-      const { maybeShowStandaloneTip } = await import('../core/standalone-tip.js');
-      await maybeShowStandaloneTip({ silent: !process.stderr.isTTY });
+      // hubspec: its skills, in every tool the update just refreshed.
+      const { installHubspecSkills } = await import('../../setup.js');
+      installHubspecSkills(path.resolve(targetPath));
     } catch (error) {
       // The --json dry run follows the agent contract: exactly one JSON
       // document on stdout, even on failure.
@@ -450,19 +425,6 @@ program
     }
     }
   );
-
-program
-  .command('install [version]')
-  .description('Install the standalone openspec, which runs without Node.js (latest release unless [version] is given)')
-  .action(async (version?: string) => {
-    try {
-      const { installStandalone } = await import('../commands/install-standalone.js');
-      await installStandalone({ version });
-    } catch (error) {
-      await failWithError(error);
-      process.exit(1);
-    }
-  });
 
 program
   .command('list')
@@ -610,11 +572,13 @@ changeCmd
 
 program
   .command('archive [change-name]')
-  .description('Archive a completed change and update main specs')
+  .description('Archive a verified change and update main specs')
   .option('-y, --yes', 'Skip confirmation prompts')
   .option('--skip-specs', 'Skip spec update operations (useful for infrastructure, tooling, or doc-only changes)')
   .option('--no-validate', 'Skip validation (not recommended, requires confirmation)')
   .option('--json', 'Output as JSON (non-interactive)')
+  // hubspec: the verification gate, on unless --no-gate.
+  .option('--no-gate', 'Archive without the verification gate (hubspec verify)')
   .option('--store <id>', STORE_OPTION_DESCRIPTION)
   .addOption(hiddenStorePathOption())
   .action(async (changeName?: string, options?: ArchiveOptions) => {
@@ -691,22 +655,6 @@ program
       await showCommand.execute(itemName, options ?? {});
     } catch (error) {
       await failWithError(error, { enabled: options?.json, fallbackCode: 'show_error' });
-      process.exit(1);
-    }
-  });
-
-// Feedback command
-program
-  .command('feedback <message>')
-  .description('Submit feedback about OpenSpec')
-  .option('--body <text>', 'Detailed description for the feedback')
-  .action(async (message: string, options?: { body?: string }) => {
-    try {
-      const { FeedbackCommand } = await import('../commands/feedback.js');
-      const feedbackCommand = new FeedbackCommand();
-      await feedbackCommand.execute(message, options);
-    } catch (error) {
-      await failWithError(error);
       process.exit(1);
     }
   });
@@ -901,8 +849,4 @@ export { program };
 
 export function runCli(argv = process.argv): void {
   program.parse(argv);
-}
-
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  runCli();
 }

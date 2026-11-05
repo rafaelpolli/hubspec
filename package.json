@@ -1,0 +1,51 @@
+{
+  "name": "hubspec",
+  "version": "0.4.0",
+  "description": "OpenSpec num CLI só, com o fluxo do OpenSpec Studio (exploração, decisões, verificação e archive com portão) e hubs multi-repo, para Claude Code, Devin, GitHub Copilot, OpenCode e as demais ferramentas do OpenSpec.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "hubspec": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "skills",
+    "commands",
+    ".claude-plugin",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_LICENSES.md"
+  ],
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "build:bin": "bun scripts/build.ts --binary",
+    "pretest": "bun run build",
+    "test": "bun test",
+    "typecheck": "bun scripts/typecheck.ts",
+    "prepublishOnly": "bun run typecheck && bun run build",
+    "gen:plugin": "bun scripts/gen-plugin.ts",
+    "import:openspec": "bun scripts/import-openspec.ts"
+  },
+  "devDependencies": {
+    "@inquirer/core": "^12.0.0",
+    "@inquirer/prompts": "^8.5.2",
+    "@types/bun": "^1.2.0",
+    "@types/node": "^22.0.0",
+    "@types/picomatch": "^4.0.3",
+    "brace-expansion": "^5.0.12",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.0",
+    "cross-spawn": "7.0.6",
+    "diff": "^9.0.0",
+    "ora": "^9.4.1",
+    "picomatch": "^4.0.4",
+    "tinyglobby": "^0.2.17",
+    "typescript": "^5.8.0",
+    "yaml": "^2.8.3",
+    "zod": "^4.4.3"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

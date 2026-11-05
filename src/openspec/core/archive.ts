@@ -1,4 +1,5 @@
 import { constants, createReadStream, promises as fs } from 'fs';
+import { gate as verificationGate } from '../../verify.js';
 import { createHash, randomUUID } from 'crypto';
 import path from 'path';
 import { formatLocalDate } from '../utils/date.js';
@@ -190,6 +191,8 @@ export interface ArchiveOptions {
   json?: boolean;
   store?: string;
   storePath?: string;
+  /** hubspec: false (`--no-gate`) archives without the verification gate. */
+  gate?: boolean;
 }
 
 interface ArchiveDiagnostic {
@@ -1440,6 +1443,19 @@ export class ArchiveCommand {
         `Cannot archive '${changeName}': ${describeNestedChange(nested)}`,
         `Rename openspec/changes/${nested.nested[0]}/ to a flat change directory, then archive it.`
       );
+    }
+
+    // hubspec: the verification gate. A change archives with a current PASS in its
+    // verification.md, or a CONCERNS whose items were justified.
+    if (options.gate !== false) {
+      const gate = verificationGate(root.path, changeName);
+      if (!gate.allowed) {
+        throw new ArchiveBlockedError(
+          'archive_gate_closed',
+          `Portão fechado para '${changeName}': ${gate.reason}`,
+          `hubspec verify ${changeName}`
+        );
+      }
     }
 
     const unknownMetadataKeys = readUnknownChangeMetadataKeys(changeDir);

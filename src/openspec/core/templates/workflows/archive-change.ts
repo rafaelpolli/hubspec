@@ -181,6 +181,8 @@ ${PROJECT_ROOT_GUARD}
 
 5. **Perform the archive**
 
+   First, the verification gate (hubspec): run \`hubspec gate "<change-name>"\`. If it exits non-zero, stop — do not archive: show the reason it prints and suggest the \`hubspec-verify\` skill. Go past a closed gate only when the user explicitly asks to archive without verification.
+
    Create an \`archive\` directory under \`planningHome.changesDir\` if it doesn't exist:
    \`\`\`bash
    mkdir -p "<planningHome.changesDir>/archive"
@@ -392,6 +394,8 @@ ${PROJECT_ROOT_GUARD}
    If the sync failed, or any capability does not match, report what differs and stop — do not archive. Nothing has moved and \`changeRoot\` is intact, so the user can fix the mismatch or re-run the sync and start the archive again.
 
 5. **Perform the archive**
+
+   First, the verification gate (hubspec): run \`hubspec gate "<change-name>"\`. If it exits non-zero, stop — do not archive: show the reason it prints and suggest the \`hubspec-verify\` skill. Go past a closed gate only when the user explicitly asks to archive without verification.
 
    Create an \`archive\` directory under \`planningHome.changesDir\` if it doesn't exist:
    \`\`\`bash

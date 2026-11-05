@@ -3,16 +3,16 @@ import http from 'http';
 import https from 'https';
 import path from 'path';
 import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
+import { PACKAGE_NAME, PACKAGE_VERSION, packageRoot } from '../../package.js';
+import upstream from '../UPSTREAM.json' with { type: 'json' };
 import chalk from 'chalk';
-import { isCiEnvironment } from '../utils/ci.js';
-import { isTelemetryOptedOutByEnv } from '../telemetry/opt-out.js';
 import { FileSystemUtils } from '../utils/file-system.js';
-import { getGlobalConfig, isGlobalConfigUnreadable } from './global-config.js';
 import { findCopiesOnPath, samePath } from '../utils/executable-path.js';
 
 const require = createRequire(import.meta.url);
-const { name: PACKAGE_NAME, version: OPENSPEC_VERSION } = require('../../package.json');
+// hubspec: the name and version are hubspec's.
+const OPENSPEC_VERSION = PACKAGE_VERSION;
+const OPENSPEC_UPSTREAM_VERSION: string = upstream.version;
 
 const DEFAULT_REGISTRY = 'https://registry.npmjs.org';
 const REQUEST_TIMEOUT_MS = 1500;
@@ -59,21 +59,11 @@ function standaloneUpgradeCommand(): string | null {
 }
 
 /**
- * The check is opt-out and must never get in the way: no network in CI or
- * tests, an explicit escape hatch for anyone offline or air-gapped, and the
- * same privacy signals telemetry already honors — a user who set DO_NOT_TRACK
- * or telemetry.enabled false did not agree to a different outbound request.
+ * hubspec: never checks. It has no release channel to ask yet, and the npm
+ * package upstream asks about is not this one.
  */
 function isCheckEnabled(): boolean {
-  if (process.env.OPENSPEC_NO_UPDATE_CHECK !== undefined) return false;
-  if (isTelemetryOptedOutByEnv()) return false;
-  if (isCiEnvironment()) return false;
-  if (process.env.NODE_ENV === 'test') return false;
-  // Same config opt-out as telemetry (env remains the hard override above).
-  if (getGlobalConfig().telemetry?.enabled === false) return false;
-  // A config that cannot be parsed may be hiding that opt-out.
-  if (isGlobalConfigUnreadable()) return false;
-  return true;
+  return false;
 }
 
 /**
@@ -359,7 +349,8 @@ export function getInstallDir(): string | null {
   // Resolved at runtime from this module's own (symlink-resolved) location.
   // require.resolve would be resolved by the binary's bundler at build time,
   // baking the build machine's path into it.
-  const packageJson = fileURLToPath(new URL('../../package.json', import.meta.url));
+  // hubspec: the package root, wherever the bundle put this module.
+  const packageJson = path.join(packageRoot(), 'package.json');
   return fs.existsSync(packageJson) ? path.dirname(packageJson) : null;
 }
 
@@ -631,7 +622,8 @@ export function buildVersionReportLines(
   command: string | null = null
 ): string[] {
   const details = [install.packageManager, install.scope].filter(Boolean).join(', ');
-  const lines = [`OpenSpec ${version}${details ? ` (${details})` : ''}`];
+  // hubspec: its own name, and the OpenSpec release it carries.
+  const lines = [`hubspec ${version} (OpenSpec ${OPENSPEC_UPSTREAM_VERSION}${details ? `, ${details}` : ''})`];
   if (!update) return lines;
 
   if (update.status === 'available') {
@@ -640,7 +632,7 @@ export function buildVersionReportLines(
   } else if (update.status === 'current') {
     lines.push('OpenSpec is up to date.');
   } else if (update.status === 'disabled') {
-    lines.push('Update check disabled.');
+    lines.push('Update check disabled: hubspec has no release channel to ask yet.');
   } else {
     lines.push('Could not check for updates.');
   }

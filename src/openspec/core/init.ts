@@ -9,7 +9,7 @@ import path from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
 import * as fs from 'fs';
-import { createRequire } from 'module';
+import { PACKAGE_VERSION } from '../../package.js';
 import { FileSystemUtils } from '../utils/file-system.js';
 import {
   classifyOpenSpecDir,
@@ -89,8 +89,8 @@ import {
   listManagedCloudFiles,
 } from './github-copilot/cloud-agent.js';
 
-const require = createRequire(import.meta.url);
-const { version: OPENSPEC_VERSION } = require('../../package.json');
+// hubspec: the version is hubspec's.
+const OPENSPEC_VERSION = PACKAGE_VERSION;
 
 // -----------------------------------------------------------------------------
 // Constants
@@ -1466,8 +1466,8 @@ export class InitCommand {
 
     // Links
     console.log();
-    console.log(`Learn more: ${chalk.cyan('https://github.com/Fission-AI/OpenSpec')}`);
-    console.log(`Feedback:   ${chalk.cyan('https://github.com/Fission-AI/OpenSpec/issues')}`);
+    // hubspec: OpenSpec's docs still apply; its issue tracker is not for hubspec.
+    console.log(`OpenSpec:   ${chalk.cyan('https://github.com/Fission-AI/OpenSpec')}`);
 
     // Restart instruction for successfully configured IDE/editor-resident tools
     // with a supported surface under the active delivery. The rule and wording live in

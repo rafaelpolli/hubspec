@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { packageRoot } from '../../../package.js';
 import { getGlobalDataDir } from '../global-config.js';
 import { FileSystemUtils } from '../../utils/file-system.js';
 import { parseSchema, SchemaValidationError } from './schema.js';
@@ -37,9 +37,8 @@ export function setPackageSchemasDir(resolveDir: () => string): void {
  */
 export function getPackageSchemasDir(): string {
   if (packageSchemasDirOverride) return packageSchemasDirOverride();
-  const currentFile = fileURLToPath(import.meta.url);
-  // Navigate from dist/core/artifact-graph/ to package root's schemas/
-  return path.join(path.dirname(currentFile), '..', '..', '..', 'schemas');
+  // hubspec: schemas/ sits at the package root, wherever the bundle put this module.
+  return path.join(packageRoot(), 'schemas');
 }
 
 /**

@@ -1,12 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** Every `openspec` on PATH, in the order a shell would find them. */
+/** Every `hubspec` on PATH, in the order a shell would find them. */
 export function findCopiesOnPath(
   pathValue: string = process.env.PATH ?? '',
   platform: NodeJS.Platform = process.platform
 ): string[] {
-  const names = platform === 'win32' ? ['openspec.exe', 'openspec.cmd'] : ['openspec'];
+  // hubspec: its own command.
+  const names = platform === 'win32' ? ['hubspec.exe', 'hubspec.cmd'] : ['hubspec'];
   const seen = new Set<string>();
   const copies: string[] = [];
   for (const dir of pathValue.split(path.delimiter)) {

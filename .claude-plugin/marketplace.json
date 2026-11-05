@@ -1,0 +1,12 @@
+{
+  "name": "hubspec",
+  "owner": { "name": "rafaelpolli" },
+  "metadata": { "description": "O fluxo do OpenSpec Studio como plugin: explorar, decidir, verificar e arquivar com portão." },
+  "plugins": [
+    {
+      "name": "hubspec",
+      "source": "./",
+      "description": "Explorar, decidir, verificar e arquivar changes do OpenSpec com portão."
+    }
+  ]
+}
