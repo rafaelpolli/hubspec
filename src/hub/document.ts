@@ -123,8 +123,8 @@ export interface Prepared {
 }
 
 /**
- * The active repos asked for (all when none), each cloned and on its default branch, not
- * behind the last fetched remote: the docs describe the default branch, not a change's.
+ * The active repos asked for (all when none), each cloned and on its working branch, not
+ * behind the last fetched remote: the docs describe the working branch, not a change's.
  */
 function targets(hub: string, m: Manifest, names: readonly string[]): Repo[] {
   const repos = names.length > 0 ? names.map((n) => findRepo(m, n)) : m.repos.filter((r) => r.status === "active");
@@ -133,7 +133,7 @@ function targets(hub: string, m: Manifest, names: readonly string[]): Repo[] {
     if (r.status !== "active") throw new Error(`o repo ${r.name} está arquivado; as docs dele estão em docs/archive/`);
     if (!isClone(dir)) throw new Error(`o repo ${r.name} não está clonado em ${r.path}: rode \`hubspec hub sync\``);
     const branch = currentBranch(dir);
-    if (branch !== r.branch) throw new Error(`o clone de ${r.name} está na branch ${branch}, não em ${r.branch}: rode \`hubspec hub sync\` para voltar à branch padrão`);
+    if (branch !== r.branch) throw new Error(`o clone de ${r.name} está na branch ${branch}, não em ${r.branch}: rode \`hubspec hub sync\` para voltar à branch de trabalho`);
     const behind = git(dir, "rev-list", "--count", `HEAD..refs/remotes/origin/${r.branch}`);
     if (behind.ok && Number(behind.out.trim()) > 0) throw new Error(`o clone de ${r.name} está atrás de origin/${r.branch}: rode \`hubspec hub sync\``);
   }

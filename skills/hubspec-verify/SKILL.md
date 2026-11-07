@@ -58,7 +58,7 @@ O código de saída é 0 para PASS, 2 para CONCERNS e 1 para FAIL.
 - **fraca**: já passava antes, então não prova a mudança;
 - **inconclusiva**.
 
-Ofereça a prova quando o usuário quiser confiança extra. Ela precisa de Git e de um commit de antes da change; por padrão é o `HEAD`, quando a change ainda não foi commitada. Num hub, o mesmo commit-ish (por exemplo `main`) é usado em cada repo.
+Ofereça a prova quando o usuário quiser confiança extra. Ela precisa de Git e de um commit de antes da change; por padrão é o `HEAD`, quando a change ainda não foi commitada. Num hub, o mesmo commit-ish é usado em cada repo: depois do `hub pr`, use a branch de trabalho dos repos (por exemplo `--prove develop` num Git Flow).
 
 ## 4. Mostrar o veredito
 

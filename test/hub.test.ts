@@ -315,7 +315,7 @@ describe("depois do merge (9.1, passo 6)", () => {
     const st = hubspec(hub, "hub", "status");
     expect(st.out).toContain("api: desatualizada");
     expect(st.out).toContain("  o clone está na branch add-pix\n  rode `hubspec hub sync` antes de documentar");
-    expect(hubspec(hub, "hub", "document", "api").err).toContain("o clone de api está na branch add-pix, não em main: rode `hubspec hub sync` para voltar à branch padrão");
+    expect(hubspec(hub, "hub", "document", "api").err).toContain("o clone de api está na branch add-pix, não em main: rode `hubspec hub sync` para voltar à branch de trabalho");
     const sync = hubspec(hub, "hub", "sync");
     expect(sync.out).toContain("api: atualizado — voltou de add-pix para main");
     expect(sync.out).toContain("worker: em dia — voltou de add-pix para main");
@@ -431,5 +431,93 @@ describe("dono/repo segue o protocolo do gh (SSH ou HTTPS)", () => {
       ["novo", "git@github.com:acme/novo.git"],
       ["outro", "https://github.com/acme/outro.git"],
     ]);
+  });
+});
+
+describe("Git Flow: a branch de trabalho do hub", () => {
+  /** Adds `branch` to a remote with one more commit of `files`, as a Git Flow develop. */
+  function branchOn(url: string, name: string, branch: string, files: Record<string, string>): void {
+    const work = join(dir, "seed", `${name}-${branch}`);
+    git(dir, "clone", "-q", url, work);
+    git(work, "checkout", "-q", "-b", branch);
+    for (const [f, text] of Object.entries(files)) {
+      mkdirSync(join(work, f, ".."), { recursive: true });
+      writeFileSync(join(work, f), text);
+    }
+    git(work, "add", "-A");
+    git(work, "commit", "-q", "-m", `começa ${branch}`);
+    git(work, "push", "-q", "origin", branch);
+  }
+  const gf = join(dir, "hub-gitflow");
+  const yaml = (at: string) => parse(readFileSync(join(at, "repos.yaml"), "utf8")) as { branch?: string; repos: { name: string; branch?: string }[] };
+  let gfUrls: Record<string, string>;
+
+  test("hub init --branch develop: os repos seguem a branch do hub; o remote sem develop é avisado; clones, docs e PRs partem de develop", () => {
+    gfUrls = {
+      api: remote("gf-api", { "package.json": JSON.stringify({ name: "gf-api" }), "src/index.ts": "export {};\n" }),
+      worker: remote("gf-worker", { "main.go": "package main\n" }),
+      infra: remote("gf-infra", { "main.tf": 'module "x" {}\n' }),
+    };
+    branchOn(gfUrls.api!, "gf-api", "develop", { "src/novo.ts": "export const novo = 1;\n" });
+    branchOn(gfUrls.worker!, "gf-worker", "develop", { "fila.go": "package main\n" });
+    mkdirSync(gf);
+    const init = hubspec(gf, "hub", "init", "--repos", gfUrls.api!, gfUrls.worker!, gfUrls.infra!, "--branch", "develop", "--tools", "claude");
+    expect(init.code).toBe(0);
+    expect(init.out).toContain("branch de trabalho do hub: develop\n");
+    expect(init.out).toContain(`registrado: gf-api (${gfUrls.api}, branch develop)`);
+    expect(init.out).toContain(`  atenção: gf-infra não tem a branch develop no remote: o sync falha até ela existir. Se o repo trabalha em outra branch: \`hubspec hub add ${gfUrls.infra} --branch <branch>\``);
+    expect(yaml(gf).branch).toBe("develop");
+    expect(yaml(gf).repos.map((r) => r.branch)).toEqual([undefined, undefined, undefined]);
+
+    const first = hubspec(gf, "hub", "sync");
+    expect(first.code).toBe(1);
+    expect(first.out).toBe("gf-api: clonado\ngf-worker: clonado\ngf-infra: falhou — o remote não tem a branch develop (a branch do repo no repos.yaml)\n");
+    expect(git(join(gf, "workspace/gf-api"), "rev-parse", "--abbrev-ref", "HEAD")).toBe("develop");
+    expect(existsSync(join(gf, "workspace/gf-api/src/novo.ts"))).toBe(true);
+
+    expect(hubspec(gf, "hub", "add", gfUrls.infra!, "--branch", "main").out).toBe(`atualizado: gf-infra (${gfUrls.infra}, branch main)\n`);
+    expect(yaml(gf).repos.map((r) => r.branch)).toEqual([undefined, undefined, "main"]);
+    expect(hubspec(gf, "hub", "sync").out).toBe("gf-api: em dia\ngf-worker: em dia\ngf-infra: clonado\n");
+
+    expect(hubspec(gf, "hub", "document").code).toBe(0);
+    expect(JSON.parse(readFileSync(join(gf, "docs/repos/gf-api/.scan.json"), "utf8"))).toMatchObject({ branch: "develop", commit: git(join(gf, "workspace/gf-api"), "rev-parse", "origin/develop") });
+    expect(JSON.parse(readFileSync(join(gf, "docs/repos/gf-infra/.scan.json"), "utf8")).branch).toBe("main");
+
+    const change = join(gf, "openspec/changes/gf-pix");
+    mkdirSync(change, { recursive: true });
+    writeFileSync(join(change, "tasks.md"), "## 1. gf-api\n\n- [x] 1.1 [gf-api] Pix — `src/pix.ts`\n");
+    writeFileSync(join(gf, "workspace/gf-api/src/pix.ts"), "export const pix = true;\n");
+    expect(hubspec(gf, "hub", "pr", "gf-pix", "--dry-run").out).toBe("gf-api: planejada — branch gf-pix → develop\n");
+    expect(hubspec(gf, "hub", "pr", "gf-pix").code).toBe(0);
+    expect(prs().find((p) => p.repo === "gf-api")).toMatchObject({ base: "develop", head: "gf-pix" });
+    expect(git(join(gf, "workspace/gf-api"), "rev-list", "--count", "origin/develop..gf-pix")).toBe("1");
+  });
+
+  test("um hub existente passa para develop: init --branch move os repos, o sync troca a branch e o status avisa que as docs são de main", () => {
+    const old = join(dir, "hub-gitflow-antigo");
+    mkdirSync(old);
+    expect(hubspec(old, "hub", "init", "--repos", gfUrls.worker!, "--tools", "claude").out).toContain(`registrado: gf-worker (${gfUrls.worker}, branch main)`);
+    expect(hubspec(old, "hub", "sync").out).toBe("gf-worker: clonado\n");
+    expect(hubspec(old, "hub", "document").code).toBe(0);
+    for (const f of ["overview.md", "architecture.md", "interfaces.md"]) fillTodos(join(old, "docs/repos/gf-worker", f));
+    fillTodos(join(old, "docs/system-overview.md"));
+    expect(hubspec(old, "hub", "document", "--done").out).toContain("(main)");
+
+    const init = hubspec(old, "hub", "init", "--branch", "develop", "--tools", "claude");
+    expect(init.out).toContain("branch de trabalho do hub: develop\n  gf-worker: main → develop\n");
+    expect([yaml(old).branch, yaml(old).repos[0]!.branch]).toEqual(["develop", undefined]);
+    expect(hubspec(old, "hub", "sync").out).toBe("gf-worker: em dia — voltou de main para develop\n");
+    expect(existsSync(join(old, "workspace/gf-worker/fila.go"))).toBe(true);
+    const st = hubspec(old, "hub", "status");
+    expect(st.code).toBe(1);
+    expect(st.out).toContain("gf-worker: desatualizada");
+    expect(st.out).toContain("  as docs descrevem a branch main; a branch de trabalho agora é develop\n");
+
+    const before = readFileSync(join(old, "repos.yaml"), "utf8");
+    expect(hubspec(old, "hub", "init", "--branch", "develop", "--tools", "claude").out).not.toContain("branch de trabalho do hub");
+    expect(readFileSync(join(old, "repos.yaml"), "utf8")).toBe(before);
+    expect(hubspec(old, "hub", "init", "--branch").err).toContain("--branch precisa do nome da branch (por exemplo --branch develop)");
+    expect(hubspec(old, "hub", "init", "--branch", "a b").err).toContain('--branch: "a b" não é um nome de branch válido');
+    expect(readFileSync(join(old, "repos.yaml"), "utf8")).toBe(before);
   });
 });

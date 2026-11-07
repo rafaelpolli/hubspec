@@ -9,9 +9,11 @@ import { addRepo, archiveRepo, removeRepo, setDependencies, status } from "./rep
 import { sync } from "./sync.ts";
 
 export const HUB_HELP = `Hub multi-repo (rode na raiz do hub):
-  hubspec hub init [--repos <url|dono/repo…>] [--repos-file <arquivo>] [--tools <ids>|all]
+  hubspec hub init [--repos <url|dono/repo…>] [--repos-file <arquivo>] [--branch <b>] [--tools <ids>|all]
       cria repos.yaml, AGENTS.md, docs/, openspec/ e os comandos dos agentes; o arquivo é
-      um texto com um repo por linha (URL ou dono/repo; o resto da linha vira a descrição)
+      um texto com um repo por linha (URL ou dono/repo; o resto da linha vira a descrição);
+      --branch é a branch de trabalho do hub (num Git Flow, develop): clones, docs e PRs
+      partem dela; sem ela, cada repo usa a branch padrão do remote
   hubspec hub add <url|dono/repo> [--name n] [--branch b] [--description t] [--tags a,b]
                   [--depends a,b] [--new --change <change>]   repo recém-criado pela automação
   hubspec hub sync                           clona ou atualiza os repos em workspace/
@@ -28,6 +30,12 @@ type Opts = Record<string, string | string[] | true>;
 
 const str = (v: Opts[string] | undefined) => (typeof v === "string" ? v : Array.isArray(v) ? v.join(",") : undefined);
 const list = (v: Opts[string] | undefined) => (str(v) ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+
+/** `--branch <b>`; `--branch` alone is a mistake, not "no branch". */
+function branchOpt(opt: Opts): string | undefined {
+  if (opt["branch"] === true) throw new Error("--branch precisa do nome da branch (por exemplo --branch develop)");
+  return str(opt["branch"]);
+}
 
 function need(value: string | undefined, what: string): string {
   if (!value) throw new Error(`falta ${what}; veja \`hubspec hub help\``);
@@ -60,10 +68,12 @@ export async function hubCommand(command: string | undefined, pos: string[], opt
       if (opt["org"] !== undefined) throw new Error("--org não existe mais: liste os repos num arquivo de texto e use --repos-file <arquivo>");
       const repos = Array.isArray(opt["repos"]) ? opt["repos"] : list(opt["repos"]);
       const file = str(opt["repos-file"]);
+      const branch = branchOpt(opt);
       await initHub(resolve(pos[0] ?? cwd), {
         tools: str(opt["tools"]) ?? HUB_TOOLS,
         repos,
         ...(file ? { reposFile: file } : {}),
+        ...(branch ? { branch } : {}),
         log: (l) => console.log(l),
       });
       console.log("\nPróximos passos: `hubspec hub sync`, depois `hubspec hub document` pelo agente (skill hubspec-document).");
@@ -72,9 +82,10 @@ export async function hubCommand(command: string | undefined, pos: string[], opt
     case "add": {
       const url = repoUrl(need(pos[0], "a URL do repo"));
       const change = str(opt["change"]);
+      const branch = branchOpt(opt);
       const r = addRepo(requireHub(cwd), url, {
         ...(str(opt["name"]) ? { name: str(opt["name"])! } : {}),
-        ...(str(opt["branch"]) ? { branch: str(opt["branch"])! } : {}),
+        ...(branch ? { branch } : {}),
         ...(str(opt["description"]) ? { description: str(opt["description"])! } : {}),
         tags: list(opt["tags"]),
         depends: list(opt["depends"]),
@@ -82,6 +93,7 @@ export async function hubCommand(command: string | undefined, pos: string[], opt
         ...(change ? { change } : {}),
       });
       console.log(`${r.existed ? "atualizado" : "registrado"}: ${r.repo.name} (${r.repo.url}, branch ${r.repo.branch})`);
+      if (r.warning) console.error(`atenção: ${r.warning}`);
       if (r.sync) console.log(`clone: ${r.sync.action}${r.sync.detail ? ` — ${r.sync.detail}` : ""}`);
       if (r.manualTask) console.log(`task manual concluída: ${r.manualTask.id ?? ""} ${r.manualTask.text}`.replace("  ", " "));
       else if (opt["new"]) console.log("nenhuma task [manual] em aberto na change");

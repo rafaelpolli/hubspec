@@ -87,4 +87,16 @@ describe("manifesto", () => {
     expect(nameFromUrl("git@github.com:acme/lib-x.git")).toBe("lib-x");
     expect(nameFromUrl("https://github.com/acme/api/")).toBe("api");
   });
+
+  test("branch do hub: os repos sem branch própria seguem; a própria fica; no YAML só a que difere", () => {
+    const m = parseManifest("branch: develop\nrepos:\n  - { name: api, url: u }\n  - { name: infra, url: v, branch: main }\n  - { name: front, url: w, branch: develop }\n");
+    expect(m.branch).toBe("develop");
+    expect(m.repos.map((r) => [r.name, r.branch])).toEqual([["api", "develop"], ["infra", "main"], ["front", "develop"]]);
+    const text = renderManifest(m);
+    expect(text).toContain("version: 1\nbranch: develop\nrepos:");
+    expect(text.match(/branch:/g)).toHaveLength(2); // the hub's and infra's
+    expect(parseManifest(text)).toEqual(m);
+    expect(parseManifest("repos:\n  - { name: api, url: u }\n").repos[0]!.branch).toBe("main");
+    expect(renderManifest(parseManifest("repos:\n  - { name: api, url: u }\n"))).toContain("    branch: main\n");
+  });
 });

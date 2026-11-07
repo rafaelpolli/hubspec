@@ -9,20 +9,23 @@ export interface SyncResult {
   detail?: string;
 }
 
-/** Clones a repo into its path, on its default branch. */
+const lastLine = (text: string) => text.trim().split("\n").pop() ?? "";
+
+/** Clones a repo into its path, on its working branch. */
 export function clone(hub: string, repo: Repo): SyncResult {
   const dir = repoPath(hub, repo);
   mkdirSync(dirname(dir), { recursive: true });
   const res = git(hub, "clone", "--branch", repo.branch, repo.url, dir);
-  return res.ok ? { repo: repo.name, action: "clonado" } : { repo: repo.name, action: "falhou", detail: res.err.trim().split("\n").pop() ?? "" };
+  if (res.ok) return { repo: repo.name, action: "clonado" };
+  const missing = /Remote branch .* not found/.test(res.err);
+  return { repo: repo.name, action: "falhou", detail: missing ? `o remote não tem a branch ${repo.branch} (a branch do repo no repos.yaml)` : lastLine(res.err) };
 }
 
-const lastLine = (text: string) => text.trim().split("\n").pop() ?? "";
-
 /**
- * Brings one repo up to date: clones it when missing, else a fast-forward pull of its default
- * branch. A clone left on a change's branch (after `hub pr`) goes back to the default branch
- * when nothing would be lost: no uncommitted changes and every commit already on the remote.
+ * Brings one repo up to date: clones it when missing, else a fast-forward pull of its working
+ * branch. A clone on another branch, left on a change's (after `hub pr`) or made before the
+ * working branch changed, goes to the working branch when nothing would be lost: no
+ * uncommitted changes and every commit already on the remote.
  */
 export function syncRepo(hub: string, repo: Repo): SyncResult {
   const dir = repoPath(hub, repo);
@@ -34,6 +37,7 @@ export function syncRepo(hub: string, repo: Repo): SyncResult {
   if (branch !== repo.branch) {
     const ahead = unpushed(dir);
     if (ahead > 0) return { repo: repo.name, action: "pulado", detail: `está na branch ${branch}, com ${ahead} commit(s) que não estão no remote` };
+    git(dir, "fetch", "-q", "origin", repo.branch); // a branch created after the clone
     const checkout = git(dir, "checkout", "-q", repo.branch);
     if (!checkout.ok) return { repo: repo.name, action: "falhou", detail: lastLine(checkout.err) };
     back = `voltou de ${branch} para ${repo.branch}`;
