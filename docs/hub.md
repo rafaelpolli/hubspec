@@ -10,15 +10,28 @@ O agente consulta o hub para saber quais peças existem, como elas conversam e e
 
 ```
 hub/
-  repos.yaml              # manifesto dos repositórios
-  AGENTS.md               # instruções comuns aos agentes
+  repos.yaml              # manifesto: os repos, a branch de trabalho e as dependências
+  AGENTS.md               # as regras do hub, comuns a todos os agentes
+  CLAUDE.md               # só importa o AGENTS.md (Claude Code)
+  .gitignore              # com workspace/
   docs/
     system-overview.md    # visão do sistema e mapa de dependências (o mapa é gerado do repos.yaml)
-    repos/<nome>/         # overview.md, architecture.md, interfaces.md, .scan.json, .meta.json
-    archive/<nome>/       # docs de repos aposentados
-  openspec/               # specs vigentes e changes em andamento
-  workspace/              # clones locais (no .gitignore)
+    repos/<nome>/
+      overview.md         # escritos pelo agente
+      architecture.md
+      interfaces.md
+      .scan.json          # a varredura do hub document
+      .meta.json          # o commit documentado (hub document --done)
+    archive/<nome>/       # docs de repos aposentados (hub archive)
+  openspec/
+    config.yaml           # com as regras do hub
+    specs/                # as specs vigentes
+    changes/              # as changes em andamento; archive/ guarda as concluídas
+  workspace/<nome>/       # os clones (hub sync), fora do Git do hub
+  .claude/ .github/ .opencode/ .devin/   # as skills e os comandos de cada ferramenta
 ```
+
+O que vai em cada doc está em [O que tem em cada doc](#o-que-tem-em-cada-doc). As pastas das ferramentas estão em [Os agentes no hub](#os-agentes-no-hub), e a pasta de uma change, em [Primeiros passos](primeiros-passos.md#a-pasta-de-uma-change).
 
 Todos os comandos do hub rodam na raiz do hub: `hubspec hub <comando>`. Para abrir PRs, é preciso o gh CLI autenticado (`gh auth login`). Por enquanto, o hub só trabalha com repositórios no GitHub.
 
@@ -118,6 +131,29 @@ Peça ao agente: "documente o hub". A skill **hubspec-document** faz o trabalho 
 2. Escreve o texto de cada seção a partir da varredura e do código. Quem escreve é o agente da sua sessão, sem chave de API própria. Neste passo, ele também grava no `repos.yaml` as dependências entre os repos (veja abaixo) e uma descrição para cada repo que estiver sem, tirada do propósito que ele escreveu.
 3. Roda `hubspec hub document --done`. Esse comando grava em `.meta.json` o commit documentado de cada repo e recusa enquanto restar uma seção `<!-- hubspec:preencher -->`.
 
+Revise as docs e faça o commit:
+
+```sh
+git add -A && git commit -m "hub: docs iniciais" && git push
+```
+
+O mapa de dependências do `docs/system-overview.md` é gerado a partir do `repos.yaml`. As dependências que o agente encontrou (`source: llm`) aparecem com ¹. Não edite à mão o trecho entre `<!-- hubspec:mapa:inicio -->` e `<!-- hubspec:mapa:fim -->`.
+
+### O que tem em cada doc
+
+| Arquivo | Quem escreve | O que tem |
+|---|---|---|
+| `overview.md` | o agente | Propósito · Stack · Como rodar · Dependências entre repos |
+| `architecture.md` | o agente | Componentes · Módulos e pastas · Fluxos principais |
+| `interfaces.md` | o agente | APIs expostas · Eventos · Contratos · Dependências externas |
+| `.scan.json` | o `hub document` | a varredura do repo: `repo`, `commit`, `branch`, `scannedAt`, a árvore de pastas (`tree`), `files`, `languages`, `manifests`, `endpoints`, `contracts`, `infra`, `configs` e `ci`, e `truncated` quando a varredura parou num limite |
+| `.meta.json` | o `hub document --done` | `repo`, `commit`, `branch` e `documentedAt`: o commit que as docs descrevem |
+| `docs/system-overview.md` | o agente e o CLI | O sistema · Fluxos entre repos, escritos pelo agente; Mapa, gerado do `repos.yaml` |
+
+- **Os títulos das seções são fixos**, iguais em todos os repos. Uma seção vazia tem o marcador `<!-- hubspec:preencher -->` e uma dica em itálico, e o `--done` recusa enquanto restar alguma.
+- **O `hub document` cria só os templates que faltam.** Um texto já escrito nunca é sobrescrito. O `.scan.json` é refeito a cada execução.
+- **O `hub status` compara o `commit` do `.meta.json` com o `origin/<branch>`** do repo. É assim que ele sabe que as docs estão desatualizadas.
+
 ### As dependências entre os repos
 
 Você não informa as dependências: o agente as encontra no código. No passo 2, ele procura o que liga um repo a outro, como uma chamada HTTP para a API de outro repo do hub, um evento que um publica e outro consome, ou um pacote de um repo usado por outro. Para cada uma, ele roda:
@@ -133,14 +169,6 @@ O comando grava a dependência no `repos.yaml`, com `source: llm`, e regenera o 
 - **O `--done` não confere as dependências.** Ele aceita um `repos.yaml` sem nenhuma, o que também é o certo quando os repos não dependem uns dos outros.
 - **Uma dependência que o agente não achou** você registra à mão: `hubspec hub depends front --add api --via "GET /pagamentos/:id"`. Ela fica com `source: manual`, e o agente pergunta antes de removê-la.
 - **Ao atualizar as docs**, o agente refaz esse passo: acrescenta as dependências novas e tira as que sumiram do código.
-
-Revise as docs e faça o commit:
-
-```sh
-git add -A && git commit -m "hub: docs iniciais" && git push
-```
-
-O mapa de dependências do `docs/system-overview.md` é gerado a partir do `repos.yaml`. As dependências que o agente encontrou (`source: llm`) aparecem com ¹. Não edite à mão o trecho entre `<!-- hubspec:mapa:inicio -->` e `<!-- hubspec:mapa:fim -->`.
 
 ## 4. Perguntar sobre o sistema
 
@@ -281,7 +309,7 @@ hubspec hub depends worker --set api,auth --source manual
 
 ## Os agentes no hub
 
-O `AGENTS.md` é o ponto de entrada comum. Para cada ferramenta, o `hub init` escreve:
+O `AGENTS.md` é o ponto de entrada comum. Cada ferramenta recebe as skills e os comandos `/opsx` de um projeto comum ([as pastas de cada ferramenta](primeiros-passos.md#as-pastas-de-cada-ferramenta)). Além deles, o `hub init` escreve:
 
 | Ferramenta | Arquivos | Comandos |
 |---|---|---|

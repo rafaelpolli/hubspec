@@ -9,7 +9,7 @@ A verificação responde a uma pergunta: cada cenário da change tem um teste, e
 
 ## Os arquivos
 
-Todos ficam dentro da change e vão junto para o archive:
+Todos ficam dentro da change e vão junto para o archive ([a pasta de uma change](primeiros-passos.md#a-pasta-de-uma-change)):
 
 | Arquivo | Quem escreve | O que é |
 |---|---|---|

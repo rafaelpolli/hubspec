@@ -33,7 +33,22 @@ openspec/
   skills/hubspec-*/      # as skills do hubspec
 ```
 
-Cada ferramenta tem a sua pasta: `.github/` no Copilot, `.opencode/` no OpenCode, `.devin/` no Devin, `.cursor/` no Cursor e assim por diante. Faça commit desses arquivos, para quem clonar o projeto ter o mesmo fluxo.
+### As pastas de cada ferramenta
+
+Cada ferramenta tem as suas pastas, com as mesmas skills e os mesmos comandos:
+
+| Ferramenta | Skills | Comandos `/opsx` |
+|---|---|---|
+| Claude Code | `.claude/skills/` | `.claude/commands/opsx/*.md` |
+| GitHub Copilot | `.github/skills/` | `.github/prompts/opsx-*.prompt.md` |
+| OpenCode | `.opencode/skills/` | `.opencode/commands/opsx-*.md` |
+| Devin | `.devin/skills/` | `.devin/workflows/opsx-*.md` |
+
+- **Em cada pasta de skills** ficam as seis `openspec-*` e as seis `hubspec-*`, inclusive a `hubspec-hub` e a `hubspec-document`, que só servem num hub.
+- **As outras ferramentas que o OpenSpec suporta**, como o Cursor, seguem o padrão do OpenSpec, cada uma na sua pasta.
+- **Num hub**, o `hub init` acrescenta os comandos do hub e as instruções que apontam para o `AGENTS.md` ([Os agentes no hub](hub.md#os-agentes-no-hub)).
+
+Faça commit desses arquivos, para quem clonar o projeto ter o mesmo fluxo.
 
 Outros casos:
 
@@ -60,6 +75,30 @@ Outros casos:
 | **Arquivar** | com o portão liberado, as delta specs vão para `openspec/specs/` e a change vai para `openspec/changes/archive/` | a change inteira, arquivada |
 
 Os passos de explorar e decidir são opcionais. O `/opsx:propose` padrão funciona sozinho, mas aí o agente decide por conta própria o que não estiver no seu pedido.
+
+### A pasta de uma change
+
+Cada change é uma pasta em `openspec/changes/`. Com todas as etapas feitas, ela fica assim:
+
+```
+openspec/changes/add-soma/
+  .openspec.yaml              # o schema e a data de criação (new change)
+  README.md                   # o nome e a descrição (new change --description)
+  exploration.md              # a exploração que virou change (hubspec-explore)
+  decisions.md                # as decisões e as respostas (hubspec-decide)
+  proposal.md                 # o porquê e o que muda (propose)
+  design.md                   # como fazer (propose)
+  specs/<capacidade>/spec.md  # as delta specs: requisitos e cenários (propose)
+  tasks.md                    # as tasks (propose); o apply marca as concluídas
+  .hubspec/
+    trace.json                # qual teste cobre cada cenário (o agente, na verificação)
+    verification.json         # o resultado e o retrato do código e dos artefatos (hubspec verify)
+  verification.md             # o relatório PASS / CONCERNS / FAIL (hubspec verify)
+```
+
+- **Só existe o que já foi feito.** Uma change criada direto pelo `/opsx:propose`, por exemplo, não tem `exploration.md` nem `decisions.md`.
+- **Ao arquivar**, a pasta inteira vai para `openspec/changes/archive/<data>-<nome>/`, e as delta specs entram em `openspec/specs/`.
+- **Num hub**, as tasks do `tasks.md` começam com `[repo]` e, depois do `hub pr`, ganham os links das PRs.
 
 ## 3. Como chamar cada etapa no seu agente
 
