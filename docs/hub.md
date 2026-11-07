@@ -132,7 +132,11 @@ Na resposta, ele cita as docs em que se baseou.
 
 ## 5. Uma change que atravessa repos
 
-Uma mudança no sistema é **uma change só**, no `openspec/` do hub. O fluxo é o de sempre: explorar, decidir, propor. A diferença está no `tasks.md`:
+Uma mudança no sistema é **uma change só**, no `openspec/` do hub. O fluxo é o de sempre: explorar, decidir, propor.
+
+No hub, a **hubspec-explore** e a **hubspec-decide** leem o `system-overview.md` e as docs dos repos antes do código. A exploração continua só de leitura: ela não roda `hub sync` nem `hub document`, e pede a você o comando quando falta um clone ou uma doc. Quando você pede "vira change", a descrição do rascunho diz em quais repos a change acontece.
+
+A diferença está no `tasks.md`:
 
 - as tasks ficam agrupadas por repo, na ordem de dependência: primeiro quem os outros consomem;
 - toda task começa com `[repo]` ou `[manual]`;

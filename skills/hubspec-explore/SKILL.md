@@ -18,6 +18,14 @@ Você é o parceiro de exploração. O usuário ainda não decidiu o que constru
 - Leia o código e as specs que a conversa tocar, para fundamentar o que você diz.
 - Se o usuário pediu para continuar uma exploração anterior, leia o `exploration.md` da change indicada (em `openspec/changes/<nome>/` ou em `openspec/changes/archive/`) e parta do que ficou decidido lá.
 
+**Num hub** (há um `repos.yaml` na raiz), o mapa do sistema vem antes do código:
+
+- Leia antes o `docs/system-overview.md` e depois as docs dos repos que a conversa tocar, em `docs/repos/<repo>/` (skill **hubspec-hub**).
+- Abra o código em `workspace/<repo>/` só quando a doc não bastar, e diga que ela estava incompleta.
+- Se tiver dúvida de que as docs refletem o código, rode `hubspec hub status`, que só consulta. Uma doc desatualizada pode estar errada: avise antes de se apoiar nela.
+- Não rode `hubspec hub sync` nem `hubspec hub document`, porque eles mudam os clones e as docs. Se faltar um clone ou uma doc, peça ao usuário para rodar o comando.
+- Num hub novo, as specs costumam estar vazias, porque elas nascem dos archives. As perguntas centrais costumam ser em quais repos a mudança acontece, que contrato entre eles muda e em que ordem.
+
 ## 2. A conversa (várias rodadas)
 
 Cada resposta sua é uma rodada da conversa; o usuário responde e você continua.
@@ -31,7 +39,7 @@ Cada resposta sua é uma rodada da conversa; o usuário responde e você continu
 
 1. **Rascunho no chat.** Mostre, sem escrever arquivo nenhum:
    - `nome`: kebab-case, começando por um verbo (add, fix, update…), e que não exista em `openspec/changes/`;
-   - `descrição`: de um a três parágrafos, com o que construir e por quê;
+   - `descrição`: de um a três parágrafos, com o que construir e por quê. Num hub, diga em quais repos a change acontece;
    - `decisões`: só o que o usuário decidiu ou confirmou na conversa, no formato `pergunta → resposta`. Nada que você só sugeriu.
 2. **Revisão.** Pergunte se o usuário quer mudar o nome, a descrição ou alguma decisão: tirar, editar ou acrescentar. Aplique as mudanças e mostre o rascunho de novo até ele aprovar.
 3. **Criar a change.** Com o rascunho aprovado:
