@@ -63,6 +63,7 @@ Com as tasks de um repo concluídas:
 1. Rode `hubspec hub pr <change> --dry-run` e mostre o plano.
 2. Peça confirmação.
 3. Rode `hubspec hub pr <change>`.
+4. Sugira o commit da change no hub, para o time ver a proposta, a verificação e os links das PRs. Só faça o commit se o usuário pedir.
 
 O comando cria a branch `<change>` em cada repo, a partir da branch de trabalho do repo (`branch` no `repos.yaml`; num Git Flow, `develop`). Depois faz commit do que estiver pendente, faz push e abre a PR pelo gh para a branch de trabalho, e lista nela as PRs irmãs e a ordem de merge. Os links das PRs ficam gravados nas tasks. As PRs de release e de produção seguem o fluxo do time, fora do hub.
 
@@ -70,4 +71,7 @@ O comando cria a branch `<change>` em cada repo, a partir da branch de trabalho 
 
 1. Rode `hubspec hub status`. Ele compara as docs com a branch de trabalho no remote, então já mostra o merge.
 2. Rode `hubspec hub sync`. Ele volta os clones da branch da change para a branch de trabalho (quando nada se perde) e traz o merge.
-3. Para cada repo com doc desatualizada, sugira atualizar com a skill **hubspec-document**.
+3. Verifique a change de novo com a skill **hubspec-verify**. O merge muda o código dos clones, e o portão fica fechado até uma verificação nova.
+4. Com o portão liberado, sugira arquivar a change com a skill **hubspec-archive**.
+5. Para cada repo com doc desatualizada, sugira atualizar com a skill **hubspec-document**.
+6. Sugira o commit do hub com a change arquivada, a spec nova e as docs atualizadas. Só faça o commit se o usuário pedir.

@@ -258,17 +258,51 @@ Para cada repo com todas as tasks concluídas, o comando:
 
 A ordem de merge segue as dependências do `repos.yaml` e as declaradas na change. Quando duas valem o mesmo, a ordem das tasks desempata. Rodar de novo reaproveita as PRs abertas. Enquanto houver uma task `[manual]` aberta, o comando recusa.
 
+O `hub pr` faz commit nos repos, não no hub. Faça o commit da change no hub, para o time ver a proposta, a verificação e os links das PRs:
+
+```sh
+git add -A && git commit -m "add-pix: proposta, verificação e PRs" && git push
+```
+
 ## 8. Depois do merge
+
+Nada no hub muda sozinho quando as PRs entram na branch de trabalho: o hubspec não recebe aviso do GitHub. O ciclo da change se fecha quando você roda os passos abaixo. Depois de um merge, o agente sugere esse caminho:
 
 ```sh
 hubspec hub status     # docs desatualizadas contra a branch de trabalho no remote; exit 1 se houver
 hubspec hub sync       # volta os clones para a branch de trabalho e traz o merge
 ```
 
-- O `status` compara as docs com o remote, então mostra o merge antes de qualquer sync.
-- O `sync` volta para a branch de trabalho os clones que ficaram na branch da change, desde que estejam limpos e com todos os commits no remote.
-- Para cada repo com doc desatualizada, peça "atualize as docs do worker". A **hubspec-document** atualiza só o que o código novo mudou.
-- O `hub document` só documenta a branch de trabalho em dia, e recusa um clone em outra branch ou atrás do remote.
+1. **`hub status`.** Ele compara as docs com o remote, então mostra o merge antes de qualquer sync.
+2. **`hub sync`.** Ele volta para a branch de trabalho os clones que ficaram na branch da change, desde que estejam limpos e com todos os commits no remote.
+3. **Verificar de novo.** Peça "verificar a change add-pix". O código dos clones mudou com o merge, então o portão fecha até uma verificação nova, agora sobre o código que entrou na branch de trabalho:
+
+   ```
+   $ hubspec gate add-pix
+   Portão fechado: o código ou os artefatos mudaram depois da verificação: verifique de novo
+   ```
+
+4. **Arquivar.** Peça "arquivar a change". Com o portão liberado, a change vai para `openspec/changes/archive/<data>-<nome>/`, e as delta specs entram em `openspec/specs/`. A partir daí, a spec em vigor do sistema descreve a change.
+5. **Atualizar as docs.** Para cada repo que o `status` apontou, peça "atualize as docs da api e do worker". A **hubspec-document** atualiza só o que o código novo mudou e registra o commit de merge no `.meta.json`. O `hub document` só documenta a branch de trabalho em dia, e recusa um clone em outra branch ou atrás do remote.
+6. **Commit no hub.** O commit leva a change arquivada, a spec nova e as docs:
+
+   ```sh
+   git add -A && git commit -m "add-pix: arquivada; docs da api e do worker" && git push
+   ```
+
+### Os commits do hub
+
+O hubspec nunca faz commit nem push no hub, e o agente só faz se você pedir. Num ciclo completo, o hub recebe três commits:
+
+| Quando | O que entra |
+|---|---|
+| depois de documentar o hub pela primeira vez ([passo 3](#3-documentar)) | `repos.yaml`, `AGENTS.md`, `CLAUDE.md`, `docs/`, `openspec/` e as pastas dos agentes |
+| depois do `hub pr` ([passo 7](#7-abrir-as-prs)) | a pasta da change: os artefatos, a verificação e o `tasks.md` com os links das PRs |
+| depois do merge, com a change arquivada e as docs em dia (acima) | a change em `changes/archive/`, a spec em `openspec/specs/` e as docs dos repos que mudaram |
+
+- **Antes do `hub pr`, também pode.** Fazer o commit da change logo depois do propose mostra ao time, mais cedo, que ela existe.
+- **Se o hub também usa PRs**, os momentos são os mesmos, mas cada commit vira uma PR do hub.
+- **Para não esquecer as docs**, rode `hubspec hub status` no CI do hub. Ele sai com 1 quando há docs desatualizadas.
 
 ## 9. Aposentar ou remover um repo
 
