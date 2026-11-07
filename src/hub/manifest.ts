@@ -18,6 +18,7 @@ export interface Repo {
   name: string;
   /** GitHub URL, HTTPS or SSH. */
   url: string;
+  /** The working branch: clones, docs and PRs start from it. The hub's `branch` when the repo has none. */
   branch: string;
   /** Local clone, relative to the hub. */
   path: string;
@@ -33,6 +34,8 @@ export interface Repo {
 
 export interface Manifest {
   version: 1;
+  /** The hub's working branch (in a Git Flow, `develop`), for the repos without one of their own. */
+  branch?: string;
   repos: Repo[];
 }
 
@@ -44,7 +47,7 @@ const DependencyIn = z.union([
 const RepoIn = z.object({
   name: z.string().regex(/^[A-Za-z0-9._-]+$/, "use letras, números, ponto, hífen ou sublinhado"),
   url: z.string().min(1),
-  branch: z.string().min(1).default("main"),
+  branch: z.string().min(1).optional(),
   path: z.string().min(1).optional(),
   description: z.string().optional(),
   tags: z.array(z.string()).default([]),
@@ -54,7 +57,7 @@ const RepoIn = z.object({
   template: z.boolean().optional(),
 });
 
-const ManifestIn = z.object({ version: z.literal(1).default(1), repos: z.array(RepoIn).default([]) });
+const ManifestIn = z.object({ version: z.literal(1).default(1), branch: z.string().min(1).optional(), repos: z.array(RepoIn).default([]) });
 
 /** A manifest the user can fix: the message says where. */
 export class ManifestError extends Error {
@@ -91,11 +94,12 @@ export function parseManifest(text: string): Manifest {
     const issue = checked.error.issues[0]!;
     throw new ManifestError(`${MANIFEST}: ${issue.path.join(".")}: ${issue.message}`);
   }
+  const hubBranch = checked.data.branch;
   const repos = checked.data.repos.map(
     (r): Repo => ({
       name: r.name,
       url: r.url,
-      branch: r.branch,
+      branch: r.branch ?? hubBranch ?? "main",
       path: r.path ?? `${WORKSPACE}/${r.name}`,
       ...(r.description ? { description: r.description } : {}),
       tags: r.tags,
@@ -110,22 +114,24 @@ export function parseManifest(text: string): Manifest {
     if (seen.has(r.name)) throw new ManifestError(`${MANIFEST}: o repo ${r.name} aparece duas vezes`);
     seen.add(r.name);
   }
-  return { version: 1, repos };
+  return { version: 1, ...(hubBranch ? { branch: hubBranch } : {}), repos };
 }
 
 export function loadManifest(hub: string): Manifest {
   return parseManifest(readFileSync(join(hub, MANIFEST), "utf8"));
 }
 
-const HEADER = `# Repositórios do sistema. Editado pelo hubspec (hub add, depends, archive, remove), mas pode ser editado à mão.
-# Campos: name, url, branch, path, description, tags, dependsOn (repo, via, source), status (active | archived).
+const HEADER = `# Repositórios do sistema. Editado pelo hubspec (hub init, add, depends, archive, remove), mas pode ser editado à mão.
+# branch (no topo): a branch de trabalho do hub (num Git Flow, develop), para os repos sem branch própria.
+# Campos de cada repo: name, url, branch, path, description, tags, dependsOn (repo, via, source), status (active | archived).
 `;
 
 export function renderManifest(m: Manifest): string {
   const repos = m.repos.map((r) => ({
     name: r.name,
     url: r.url,
-    branch: r.branch,
+    // A repo on the hub's branch follows it: changing the hub's branch moves it too.
+    ...(r.branch !== m.branch ? { branch: r.branch } : {}),
     path: r.path,
     ...(r.description ? { description: r.description } : {}),
     tags: r.tags,
@@ -135,7 +141,7 @@ export function renderManifest(m: Manifest): string {
     ...(r.changes?.length ? { changes: r.changes } : {}),
     ...(r.template ? { template: true } : {}),
   }));
-  return HEADER + stringify({ version: 1, repos }, { lineWidth: 0 });
+  return HEADER + stringify({ version: 1, ...(m.branch ? { branch: m.branch } : {}), repos }, { lineWidth: 0 });
 }
 
 export function saveManifest(hub: string, m: Manifest): void {

@@ -75,8 +75,11 @@ Por exemplo, uma change só de documentação. Use `hubspec archive <change> --n
 **`hub pr` recusa por causa de uma task `[manual]`**
 Uma task manual ainda está aberta, por exemplo a criação de um repo. Crie o repo e rode `hubspec hub add <url> --new --change <change>`, que conclui a task.
 
+**`hub sync`: `o remote não tem a branch develop`**
+O repo segue a branch de trabalho do hub, e o remote dele não tem essa branch. Crie a branch no remote, ou informe a branch em que o repo trabalha: `hubspec hub add <url> --branch main`.
+
 **`hub document` recusa um clone**
-As docs descrevem a branch padrão em dia. Rode `hubspec hub sync`. Se o clone tiver trabalho local na branch da change, envie esse trabalho (pelo `hub pr`) ou descarte-o antes.
+As docs descrevem a branch de trabalho em dia. Rode `hubspec hub sync`. Se o clone tiver trabalho local na branch da change, envie esse trabalho (pelo `hub pr`) ou descarte-o antes.
 
 **`hub document --done` recusa**
 Ainda há uma seção com `<!-- hubspec:preencher -->` nas docs de algum repo ou no `system-overview.md`. Preencha a seção, ou escreva "Não se aplica" e o motivo.

@@ -85,6 +85,8 @@ hubspec hub sync                           # clona em workspace/
 # no agente: "documente o hub"
 ```
 
+Num Git Flow, `hubspec hub init --repos-file repos.md --branch develop` faz os clones, as docs e as PRs partirem de `develop` ([a branch de trabalho](docs/hub.md#a-branch-de-trabalho-git-flow)).
+
 O guia completo está em [Hub multi-repo](docs/hub.md).
 
 ## Desenvolvimento

@@ -13,7 +13,7 @@ export const AGENTS_SECTION = `${START}
 
 Este repositório é o **hub** do sistema: ele guarda o mapa do sistema, não o código.
 
-- \`repos.yaml\` lista os repositórios do sistema: URL, branch, descrição, tags e dependências entre eles.
+- \`repos.yaml\` lista os repositórios do sistema: URL, branch, descrição, tags e dependências entre eles. A \`branch\` de cada repo é a branch de trabalho (num Git Flow, \`develop\`): os clones, as docs e as PRs partem dela. Nunca abra PR para outra branch.
 - \`docs/system-overview.md\` é a visão do sistema e o mapa de dependências; \`docs/repos/<repo>/\` tem a visão geral, a arquitetura e as interfaces de cada repo.
 - \`openspec/\` guarda as specs vigentes do sistema e as changes em andamento.
 - O código real fica nos clones em \`workspace/<repo>/\` (fora do Git do hub). Se faltar um clone, rode \`hubspec hub sync\`.
@@ -43,7 +43,7 @@ Uma mudança que atravessa repos é **uma change só** no \`openspec/\` do hub.
 
 - \`hubspec hub sync\`: clona ou atualiza os repos em \`workspace/\`. Rode no começo do trabalho.
 - \`hubspec hub status\`: mostra as docs desatualizadas. Rode depois de um merge e sugira atualizar as docs.
-- \`hubspec hub document [repos]\`: gera ou atualiza as docs (siga a skill \`hubspec-document\`). Documenta a branch padrão de cada repo: rode \`hubspec hub sync\` antes.
+- \`hubspec hub document [repos]\`: gera ou atualiza as docs (siga a skill \`hubspec-document\`). Documenta a branch de trabalho de cada repo: rode \`hubspec hub sync\` antes.
 - \`hubspec hub depends <repo> --add <outro> --via "<como>" --source llm\`: registra uma dependência entre repos encontrada no código.
 - \`hubspec hub pr <change>\`: com as tasks de um repo concluídas, abre as PRs (uma por repo) com as irmãs e a ordem de merge, e grava os links nas tasks.
 - \`hubspec hub add <url> --new --change <change>\`: depois que a automação criou o repo, registra, clona e conclui a task manual.

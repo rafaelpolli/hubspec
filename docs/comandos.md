@@ -47,7 +47,7 @@ Todos rodam na raiz do hub. `hubspec hub help` mostra o resumo.
 
 | Comando | O que faz |
 |---|---|
-| `hubspec hub init [--repos <url\|dono/repo…>] [--repos-file <arquivo>] [--tools <ids>\|all]` | cria o hub. As ferramentas padrão são claude, devin, github-copilot e opencode |
+| `hubspec hub init [--repos <url\|dono/repo…>] [--repos-file <arquivo>] [--branch <b>] [--tools <ids>\|all]` | cria o hub. `--branch` é a branch de trabalho do hub (num Git Flow, `develop`); rodado num hub que já existe, passa os repos para ela. As ferramentas padrão são claude, devin, github-copilot e opencode |
 | `hubspec hub add <url\|dono/repo> [--name] [--branch] [--description] [--tags a,b] [--depends a,b]` | registra um repo |
 | `hubspec hub add <url> --new --change <change>` | registra o repo que a automação criou para uma change e conclui a task `[manual]` |
 | `hubspec hub sync` | clona e atualiza os repos em `workspace/`; volta da branch da change quando nada se perde |

@@ -23,6 +23,33 @@ export function remoteDefaultBranch(cwd: string, url: string): string {
   return /^ref:\s+refs\/heads\/(\S+)\s+HEAD/m.exec(res.out)?.[1] ?? "main";
 }
 
+/** Whether the remote has `branch`; undefined when the remote could not be reached. */
+export function remoteHasBranch(cwd: string, url: string, branch: string): boolean | undefined {
+  const res = git(cwd, "ls-remote", url, `refs/heads/${branch}`);
+  return res.ok ? res.out.trim() !== "" : undefined;
+}
+
+/** Refuses a name Git would not take as a branch (`--branch "a b"`). */
+export function checkBranchName(cwd: string, branch: string): void {
+  if (!git(cwd, "check-ref-format", "--branch", branch).ok) throw new ManifestError(`--branch: "${branch}" não é um nome de branch válido`);
+}
+
+/**
+ * `hub init --branch <b>`: the hub's working branch, for the repos registered without
+ * `--branch`. A new branch moves every repo to it, also those that had one of their own (they
+ * are in `moved`, to be set again with `hub add <url> --branch`); the same branch changes nothing.
+ */
+export function setHubBranch(hub: string, branch: string): { changed: boolean; moved: { name: string; from: string }[] } {
+  checkBranchName(hub, branch);
+  const m = loadManifest(hub);
+  if (m.branch === branch) return { changed: false, moved: [] };
+  const moved = m.repos.filter((r) => r.branch !== branch).map((r) => ({ name: r.name, from: r.branch }));
+  m.branch = branch;
+  for (const r of m.repos) r.branch = branch;
+  saveManifest(hub, m);
+  return { changed: true, moved };
+}
+
 export interface AddOptions {
   name?: string;
   branch?: string;
@@ -38,6 +65,8 @@ export interface AddResult {
   repo: Repo;
   /** The repo was already in the manifest with this URL. */
   existed: boolean;
+  /** Registered, but something will fail later: the remote lacks the hub's branch. */
+  warning?: string;
   sync?: SyncResult;
   /** The manual task checked in the change's tasks.md. */
   manualTask?: HubTask;
@@ -50,6 +79,7 @@ export interface AddResult {
  */
 export function addRepo(hub: string, url: string, opts: AddOptions = {}): AddResult {
   if (opts.isNew && !opts.change) throw new ManifestError("--new precisa de --change <change>");
+  if (opts.branch) checkBranchName(hub, opts.branch);
   const changeDir = opts.change ? join(hub, "openspec", "changes", opts.change) : undefined;
   if (changeDir && !existsSync(changeDir)) throw new ManifestError(`a change ${opts.change} não existe em openspec/changes`);
   const m = loadManifest(hub);
@@ -59,8 +89,14 @@ export function addRepo(hub: string, url: string, opts: AddOptions = {}): AddRes
   let repo = m.repos.find((r) => r.name === name);
   const existed = !!repo;
   if (repo && repo.url !== url) throw new ManifestError(`já existe um repo ${name} com outra URL (${repo.url}): use --name`);
+  let warning: string | undefined;
   if (!repo) {
-    repo = { name, url, branch: opts.branch ?? remoteDefaultBranch(hub, url), path: `${WORKSPACE}/${name}`, tags: [], dependsOn: [], status: "active" };
+    // Its own branch, else the hub's (checked on the remote), else the remote's default.
+    const branch = opts.branch ?? m.branch ?? remoteDefaultBranch(hub, url);
+    if (!opts.branch && m.branch && remoteHasBranch(hub, url, m.branch) === false) {
+      warning = `${name} não tem a branch ${m.branch} no remote: o sync falha até ela existir. Se o repo trabalha em outra branch: \`hubspec hub add ${url} --branch <branch>\``;
+    }
+    repo = { name, url, branch, path: `${WORKSPACE}/${name}`, tags: [], dependsOn: [], status: "active" };
     m.repos.push(repo);
   }
   if (opts.branch) repo.branch = opts.branch;
@@ -72,7 +108,7 @@ export function addRepo(hub: string, url: string, opts: AddOptions = {}): AddRes
   if (opts.isNew) repo.template = true;
   saveManifest(hub, m);
 
-  const result: AddResult = { repo, existed };
+  const result: AddResult = { repo, existed, ...(warning ? { warning } : {}) };
   if (opts.isNew) {
     result.sync = syncRepo(hub, repo);
     const tasks = join(changeDir!, "tasks.md");
@@ -184,7 +220,7 @@ export interface RepoStatus {
   repo: string;
   state: "em dia" | "desatualizada" | "sem docs" | "não clonado" | "arquivado";
   documented?: string;
-  /** The default branch's latest commit, on the remote when it could be fetched. */
+  /** The working branch's latest commit, on the remote when it could be fetched. */
   current?: string;
   /** Commits between the documented one and the current one, when Git knows both. */
   behind?: number;
@@ -192,7 +228,7 @@ export interface RepoStatus {
   notes: string[];
 }
 
-/** The latest commit of the repo's default branch: fetched from the remote, else the last one known. */
+/** The latest commit of the repo's working branch: fetched from the remote, else the last one known. */
 function latest(dir: string, branch: string): { commit?: string; fetched: boolean } {
   const fetched = git(dir, "fetch", "-q", "origin", branch).ok;
   const remote = git(dir, "rev-parse", "--verify", "-q", `refs/remotes/origin/${branch}`);
@@ -202,7 +238,7 @@ function latest(dir: string, branch: string): { commit?: string; fetched: boolea
 }
 
 /**
- * `hub status`: repos whose default branch, as it is on the remote, differs from the commit
+ * `hub status`: repos whose working branch, as it is on the remote, differs from the commit
  * the docs describe. Comparing with the remote shows merged PRs before any sync (spec 9.1).
  */
 export function status(hub: string): RepoStatus[] {
@@ -220,6 +256,7 @@ export function status(hub: string): RepoStatus[] {
     if (notes.some((n) => n.startsWith("o clone"))) notes.push("rode `hubspec hub sync` antes de documentar");
     const meta = readMeta(docsDir(hub, r.name));
     if (!meta) return { repo: r.name, state: "sem docs", ...(current ? { current } : {}), notes };
+    if (meta.branch !== r.branch) notes.push(`as docs descrevem a branch ${meta.branch}; a branch de trabalho agora é ${r.branch}`);
     if (meta.commit === current) return { repo: r.name, state: "em dia", documented: meta.commit, current, notes };
     const count = current ? git(dir, "rev-list", "--count", `${meta.commit}..${current}`) : undefined;
     return { repo: r.name, state: "desatualizada", documented: meta.commit, ...(current ? { current } : {}), ...(count?.ok ? { behind: Number(count.out.trim()) } : {}), notes };

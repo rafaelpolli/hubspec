@@ -14,7 +14,7 @@ A documentação tem duas etapas. O CLI faz a parte determinística: a varredura
 
 ## 1. Varredura
 
-Rode antes `hubspec hub sync`: as docs descrevem a branch padrão de cada repo, e o `hub document` recusa um clone que está em outra branch ou atrás do remote.
+Rode antes `hubspec hub sync`: as docs descrevem a branch de trabalho de cada repo (`branch` no `repos.yaml`; num Git Flow, `develop`), e o `hub document` recusa um clone que está em outra branch ou atrás do remote.
 
 Rode `hubspec hub document [repos…]`. Para cada repo, o comando:
 

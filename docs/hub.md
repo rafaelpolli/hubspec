@@ -59,6 +59,43 @@ O `hub init` faz quatro coisas:
 
 Por padrão, ele instala para Claude Code, Devin, GitHub Copilot e OpenCode. Para mudar a lista, use `--tools`, por exemplo `--tools claude,cursor` ou `--tools all`.
 
+### A branch de trabalho (Git Flow)
+
+Cada repo tem uma branch de trabalho, o campo `branch` do `repos.yaml`. Todo o hub parte dela:
+
+| Comando | Usa a branch de trabalho para |
+|---|---|
+| `hub sync` | clonar (`git clone --branch`) e atualizar (`pull --ff-only`) |
+| `hub document` | documentar: recusa um clone em outra branch ou atrás de `origin/<branch>` |
+| `hub status` | comparar o commit documentado com `origin/<branch>` |
+| `hub pr` | criar a branch da change a partir dela e abrir a PR para ela (`gh pr create --base`) |
+
+Sem `--branch`, cada repo usa a branch padrão do remote, que costuma ser `main`. Num Git Flow, as PRs de feature vão para `develop`, as de release para homologação e só elas chegam à `main`. Nesse caso, informe a branch no `init`:
+
+```sh
+hubspec hub init --repos-file repos.md --branch develop
+```
+
+O `repos.yaml` passa a ter a branch do hub no topo. Os repos sem `branch` própria seguem essa branch:
+
+```yaml
+version: 1
+branch: develop
+repos:
+  - name: api
+    url: git@github.com:acme/api.git
+    path: workspace/api
+    # …
+  - name: infra
+    url: git@github.com:acme/infra.git
+    branch: main          # este repo trabalha em outra branch
+    path: workspace/infra
+```
+
+- **Um repo sem a branch.** Ao registrar o repo, o hubspec confere se o remote tem a branch do hub. Se não tiver, ele avisa, e o `sync` falha nesse repo com `o remote não tem a branch develop`. Se o repo trabalha em outra branch, informe-a: `hubspec hub add <url> --branch main`.
+- **Um hub que já existe.** Rode `hubspec hub init --branch develop` de novo. Os repos passam para `develop`, inclusive os que tinham branch própria. A saída lista cada repo e a branch de antes, para você refazer as exceções com `hub add <url> --branch`. Depois, o `hub sync` troca a branch dos clones, desde que nada se perca. As docs passam a aparecer como desatualizadas no `hub status`, com o aviso `as docs descrevem a branch main`. Rodar de novo com a mesma branch não muda nada.
+- **Fora do hub.** As PRs de release e de produção, e o fluxo do próprio repositório do hub, ficam com o time. O hubspec não faz commit no hub.
+
 ## 2. Clonar
 
 ```sh
@@ -148,7 +185,7 @@ A verificação é a mesma de um projeto só ([Verificação e portão](verifica
   O teste roda dentro de `workspace/<repo>/`.
 - A verificação fica desatualizada quando qualquer repo clonado muda.
 
-Com `--prove <commit>`, o mesmo commit-ish (por exemplo `main`) é usado em cada repo.
+Com `--prove <commit>`, o mesmo commit-ish é usado em cada repo. Depois do `hub pr`, use a branch de trabalho: `--prove develop` num Git Flow.
 
 ## 7. Abrir as PRs
 
@@ -159,9 +196,9 @@ hubspec hub pr add-pix
 
 Para cada repo com todas as tasks concluídas, o comando:
 
-1. cria a branch com o nome da change;
+1. cria a branch com o nome da change, a partir da branch de trabalho do repo;
 2. faz commit do que estiver pendente e dá push;
-3. abre a PR com `gh pr create`;
+3. abre a PR para a branch de trabalho, com `gh pr create --base <branch>`;
 4. escreve em cada PR as PRs irmãs e a ordem de merge;
 5. grava o link na task (`→ PR: <url>`).
 
@@ -170,14 +207,14 @@ A ordem de merge segue as dependências do `repos.yaml` e as declaradas na chang
 ## 8. Depois do merge
 
 ```sh
-hubspec hub status     # docs desatualizadas contra a branch padrão no remote; exit 1 se houver
-hubspec hub sync       # volta os clones para a branch padrão e traz o merge
+hubspec hub status     # docs desatualizadas contra a branch de trabalho no remote; exit 1 se houver
+hubspec hub sync       # volta os clones para a branch de trabalho e traz o merge
 ```
 
 - O `status` compara as docs com o remote, então mostra o merge antes de qualquer sync.
-- O `sync` volta para a branch padrão os clones que ficaram na branch da change, desde que estejam limpos e com todos os commits no remote.
+- O `sync` volta para a branch de trabalho os clones que ficaram na branch da change, desde que estejam limpos e com todos os commits no remote.
 - Para cada repo com doc desatualizada, peça "atualize as docs do worker". A **hubspec-document** atualiza só o que o código novo mudou.
-- O `hub document` só documenta a branch padrão em dia, e recusa um clone em outra branch ou atrás do remote.
+- O `hub document` só documenta a branch de trabalho em dia, e recusa um clone em outra branch ou atrás do remote.
 
 ## 9. Aposentar ou remover um repo
 
@@ -197,11 +234,12 @@ O `remove`:
 
 ## O `repos.yaml`
 
-Cada repo tem estes campos:
+No topo, `branch` é a branch de trabalho do hub ([Git Flow](#a-branch-de-trabalho-git-flow)). É opcional. Cada repo tem estes campos:
 
 | Campo | O que é |
 |---|---|
-| `name`, `url`, `branch`, `path` | identificação e onde fica o clone |
+| `name`, `url`, `path` | identificação e onde fica o clone |
+| `branch` | a branch de trabalho do repo. Sem ela, vale a do hub; sem nenhuma das duas, `main`. O hubspec só a grava quando ela é diferente da do hub |
 | `description`, `tags` | para o agente e para o mapa |
 | `dependsOn` | dependências: um nome (`api`) ou `{ repo, via, source }`, com `source` `llm` (encontrada pelo agente) ou `manual` |
 | `status` | `active` ou `archived` |
