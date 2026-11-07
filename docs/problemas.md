@@ -84,5 +84,8 @@ As docs descrevem a branch de trabalho em dia. Rode `hubspec hub sync`. Se o clo
 **`hub document --done` recusa**
 Ainda há uma seção com `<!-- hubspec:preencher -->` nas docs de algum repo ou no `system-overview.md`. Preencha a seção, ou escreva "Não se aplica" e o motivo.
 
+**O mapa do `system-overview.md` não tem dependências**
+As dependências entre os repos não vêm do `repos.md`. Quem as grava no `repos.yaml` é o agente, ao documentar o hub. Se você rodou só `hubspec hub document` no terminal, peça ao agente "documente o hub". Se o agente deixou passar uma dependência, registre-a com `hubspec hub depends <repo> --add <outro> --via "…"` ([as dependências entre os repos](hub.md#as-dependências-entre-os-repos)).
+
 **Erros do `gh` no `hub pr`**
 Rode `gh auth status`. Se não estiver autenticado, rode `gh auth login`.

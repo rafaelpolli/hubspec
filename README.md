@@ -9,7 +9,7 @@ O OpenSpec num CLI só, sem dependências, com o fluxo do [OpenSpec Studio](http
 | `hubspec-verify` | depois do apply | o agente aponta um teste por cenário (`.hubspec/trace.json`); o CLI confere a evidência no código, roda os testes e dá **PASS / CONCERNS / FAIL** em `verification.md` |
 | `hubspec-archive` | no fim | só arquiva com o portão liberado: PASS, ou CONCERNS com cada item conferido ou justificado, e verificação em dia |
 | `hubspec-hub` | num hub | orientar-se pelas docs antes do código; changes multi-repo com tasks `[repo]` na ordem de dependência; PRs |
-| `hubspec-document` | num hub | escreve as docs de cada repo a partir da varredura do CLI e registra as dependências entre repos |
+| `hubspec-document` | num hub | escreve as docs de cada repo a partir da varredura do CLI e grava no `repos.yaml` as dependências entre repos e as descrições que faltam |
 
 O formato é o do OpenSpec. Os arquivos extras (`exploration.md`, `decisions.md`, `verification.md`) têm os mesmos nomes do Studio, e uma change feita com o hubspec continua sendo uma change OpenSpec normal.
 
@@ -74,16 +74,18 @@ Para sistemas brownfield com vários repositórios, um repositório central (o h
 
 - a lista dos repos (`repos.yaml`);
 - a documentação de cada um, gerada a partir de uma varredura determinística e escrita pelo agente;
-- o mapa de dependências;
+- o mapa de dependências, que o agente monta lendo o código dos repos;
 - as changes que atravessam repos, com tasks `[repo]` na ordem de dependência.
 
 O `hubspec hub pr` abre uma PR por repo, com as PRs irmãs e a ordem de merge.
 
 ```sh
-hubspec hub init --repos-file repos.md     # um repo por linha: URL ou dono/repo
+hubspec hub init --repos-file repos.md     # um repo por linha: a URL ou dono/repo, e a descrição se quiser
 hubspec hub sync                           # clona em workspace/
-# no agente: "documente o hub"
+# no agente: "documente o hub"           # escreve as docs; grava dependências e descrições no repos.yaml
 ```
+
+O `repos.md` só lista os repos. As dependências entre eles não vão nele: o agente as encontra no código ao documentar o hub.
 
 Num Git Flow, `hubspec hub init --repos-file repos.md --branch develop` faz os clones, as docs e as PRs partirem de `develop` ([a branch de trabalho](docs/hub.md#a-branch-de-trabalho-git-flow)).
 

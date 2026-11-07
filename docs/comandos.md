@@ -47,14 +47,14 @@ Todos rodam na raiz do hub. `hubspec hub help` mostra o resumo.
 
 | Comando | O que faz |
 |---|---|
-| `hubspec hub init [--repos <url\|dono/repo…>] [--repos-file <arquivo>] [--branch <b>] [--tools <ids>\|all]` | cria o hub. `--branch` é a branch de trabalho do hub (num Git Flow, `develop`); rodado num hub que já existe, passa os repos para ela. As ferramentas padrão são claude, devin, github-copilot e opencode |
-| `hubspec hub add <url\|dono/repo> [--name] [--branch] [--description] [--tags a,b] [--depends a,b]` | registra um repo |
+| `hubspec hub init [--repos <url\|dono/repo…>] [--repos-file <arquivo>] [--branch <b>] [--tools <ids>\|all]` | cria o hub. Do `--repos-file`, lê só o endereço e a descrição de cada repo. `--branch` é a branch de trabalho do hub (num Git Flow, `develop`); rodado num hub que já existe, passa os repos para ela. As ferramentas padrão são claude, devin, github-copilot e opencode |
+| `hubspec hub add <url\|dono/repo> [--name] [--branch] [--description] [--tags a,b] [--depends a,b]` | registra um repo; num repo já registrado, muda só o que foi informado |
 | `hubspec hub add <url> --new --change <change>` | registra o repo que a automação criou para uma change e conclui a task `[manual]` |
 | `hubspec hub sync` | clona e atualiza os repos em `workspace/`; volta da branch da change quando nada se perde |
 | `hubspec hub document [repos…]` | varredura determinística e templates das docs |
 | `hubspec hub document --done [repos…]` | registra o commit documentado; recusa se faltar preencher alguma seção |
-| `hubspec hub depends <repo> [--set\|--add\|--remove a,b] [--via <texto>] [--source llm\|manual]` | as dependências entre repos; regenera o mapa |
-| `hubspec hub status` | docs desatualizadas em relação à branch padrão no remote; saída 1 se houver |
+| `hubspec hub depends <repo> [--set\|--add\|--remove a,b] [--via <texto>] [--source llm\|manual]` | as dependências entre repos; regenera o mapa. O agente o roda ao documentar, com `--source llm` |
+| `hubspec hub status` | docs desatualizadas em relação à branch de trabalho no remote; saída 1 se houver |
 | `hubspec hub pr <change> [--dry-run]` | uma PR por repo, com as PRs irmãs e a ordem de merge |
 | `hubspec hub archive <repo>` | aposenta o repo |
 | `hubspec hub remove <repo> [--yes] [--force]` | tira o repo do manifesto e apaga as docs e o clone |
