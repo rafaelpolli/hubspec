@@ -230,6 +230,15 @@ describe("bootstrap de um hub (9.0)", () => {
     expect(overview).toContain("  worker -->|evento PagamentoCriado| api");
     expect(hubspec(hub, "hub", "depends", "worker", "--add", "nao-existe").err).toContain("o repo nao-existe não está no repos.yaml");
   });
+
+  test("a descrição que faltava: o agente a grava com hub add --name --description, e o resto do repo fica igual", () => {
+    const before = repo("front");
+    expect(before.description).toBeUndefined();
+    const res = hubspec(hub, "hub", "add", urls.front!, "--name", "front", "--description", "tela web de pagamentos");
+    expect(res.out).toBe(`atualizado: front (${urls.front}, branch main)\n`);
+    expect(repo("front")).toEqual({ ...before, description: "tela web de pagamentos" });
+    expect(read("docs/system-overview.md")).toContain("| front | tela web de pagamentos | - | api | [docs](repos/front/overview.md) |");
+  });
 });
 
 // front comes before worker in the file, but declares that it depends on worker in this change.

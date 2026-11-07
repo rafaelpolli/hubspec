@@ -34,7 +34,7 @@ hubspec hub init --repos-file repos.md
 O `--repos-file` aceita um documento de texto qualquer. Ele pega um repo por linha:
 
 - uma URL em qualquer lugar da linha: simples, entre `<>` ou num link Markdown;
-- ou uma linha que comece com `dono/repo`.
+- ou uma linha que comece com `dono/repo`, o atalho do GitHub: em `acme/api`, `acme` é o usuário ou a organização a que o repo pertence.
 
 O resto da linha vira a descrição do repo, e títulos e prosa são ignorados:
 
@@ -45,6 +45,12 @@ O resto da linha vira a descrição do repo, e títulos e prosa são ignorados:
 - [worker](git@github.com:acme/worker.git): processa eventos
 - acme/front - tela web
 ```
+
+O arquivo só diz quais repos fazem parte do sistema. Em cada linha, só o endereço é obrigatório:
+
+- **A descrição é opcional.** Num repo sem descrição, o agente escreve uma ao documentar o hub: uma frase sobre o que o repo faz. Ele não mexe numa descrição que já existe, como as que vêm do arquivo. Para trocar uma descrição, use `hubspec hub add <url> --description "…"`.
+- **As dependências não vão no arquivo.** O `--repos-file` não as lê, nem quando a descrição fala de outro repo, como "consome os eventos da api". Quem as grava no `repos.yaml` é o agente, quando você pede para documentar o hub ([passo 3](#3-documentar)): ele as encontra lendo o código dos repos.
+- **A branch também não vai.** Ela vem do `--branch` ou da branch padrão do remote ([a branch de trabalho](#a-branch-de-trabalho-git-flow)).
 
 Também dá para passar os repos direto, com `--repos https://github.com/acme/api acme/worker`, ou criar o hub vazio e acrescentar os repos depois com `hub add`.
 
@@ -109,8 +115,24 @@ O `sync` clona em `workspace/<repo>/` os repos que faltam e atualiza os que já 
 Peça ao agente: "documente o hub". A skill **hubspec-document** faz o trabalho em três passos:
 
 1. Roda `hubspec hub document`. Esse passo é determinístico. Para cada repo, ele varre a árvore, as linguagens, os manifests, os endpoints, os contratos (OpenAPI, AsyncAPI, protobuf, GraphQL), a infraestrutura, as configs e o CI, e grava o resultado em `docs/repos/<repo>/.scan.json`. Também cria os templates `overview.md`, `architecture.md` e `interfaces.md`.
-2. Escreve o texto de cada seção a partir da varredura e do código. Quem escreve é o agente da sua sessão, sem chave de API própria. Ele registra as dependências que encontrar entre os repos: `hubspec hub depends worker --add api --via "evento PixRecebido" --source llm`.
+2. Escreve o texto de cada seção a partir da varredura e do código. Quem escreve é o agente da sua sessão, sem chave de API própria. Neste passo, ele também grava no `repos.yaml` as dependências entre os repos (veja abaixo) e uma descrição para cada repo que estiver sem, tirada do propósito que ele escreveu.
 3. Roda `hubspec hub document --done`. Esse comando grava em `.meta.json` o commit documentado de cada repo e recusa enquanto restar uma seção `<!-- hubspec:preencher -->`.
+
+### As dependências entre os repos
+
+Você não informa as dependências: o agente as encontra no código. No passo 2, ele procura o que liga um repo a outro, como uma chamada HTTP para a API de outro repo do hub, um evento que um publica e outro consome, ou um pacote de um repo usado por outro. Para cada uma, ele roda:
+
+```sh
+hubspec hub depends worker --add api --via "evento PixRecebido" --source llm
+```
+
+O comando grava a dependência no `repos.yaml`, com `source: llm`, e regenera o mapa. Algumas ressalvas:
+
+- **Só o agente faz isso.** Rodado no terminal, o `hubspec hub document` só varre os repos e cria os templates. A varredura lista as dependências de pacotes (npm, pip…), mas não descobre as que existem entre os repos do hub.
+- **É uma inferência.** O agente vê o que está no código e pode deixar passar uma dependência que só existe na configuração de produção. Por isso, as que ele encontrou aparecem com ¹ no mapa, para você conferir.
+- **O `--done` não confere as dependências.** Ele aceita um `repos.yaml` sem nenhuma, o que também é o certo quando os repos não dependem uns dos outros.
+- **Uma dependência que o agente não achou** você registra à mão: `hubspec hub depends front --add api --via "GET /pagamentos/:id"`. Ela fica com `source: manual`, e o agente pergunta antes de removê-la.
+- **Ao atualizar as docs**, o agente refaz esse passo: acrescenta as dependências novas e tira as que sumiram do código.
 
 Revise as docs e faça o commit:
 
@@ -244,8 +266,8 @@ No topo, `branch` é a branch de trabalho do hub ([Git Flow](#a-branch-de-trabal
 |---|---|
 | `name`, `url`, `path` | identificação e onde fica o clone |
 | `branch` | a branch de trabalho do repo. Sem ela, vale a do hub; sem nenhuma das duas, `main`. O hubspec só a grava quando ela é diferente da do hub |
-| `description`, `tags` | para o agente e para o mapa |
-| `dependsOn` | dependências: um nome (`api`) ou `{ repo, via, source }`, com `source` `llm` (encontrada pelo agente) ou `manual` |
+| `description`, `tags` | para o agente e para o mapa. A descrição vem do resto da linha no `--repos-file` ou do `hub add --description`; sem nenhum dos dois, o agente escreve uma ao documentar. As tags vêm do `hub add --tags` |
+| `dependsOn` | dependências: um nome (`api`) ou `{ repo, via, source }`. O agente as grava ao documentar, com `source: llm` ([como](#as-dependências-entre-os-repos)); as suas, do `hub depends` ou do `hub add --depends`, ficam com `source: manual`. Não vêm do `--repos-file` |
 | `status` | `active` ou `archived` |
 | `changes`, `template` | nos repos criados pela automação para uma change |
 

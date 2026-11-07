@@ -1,6 +1,6 @@
 ---
 name: hubspec-document
-description: Gerar ou atualizar a documentação dos repositórios de um hub multi-repo do hubspec (overview, arquitetura, interfaces, visão do sistema e dependências entre repos) a partir da varredura do CLI. Use depois de `hubspec hub sync` num hub novo, quando `hubspec hub status` mostrar docs desatualizadas, ou quando o usuário pedir "documentar o repo X".
+description: Gerar ou atualizar a documentação dos repositórios de um hub multi-repo do hubspec (overview, arquitetura, interfaces, visão do sistema, dependências entre repos e a descrição de cada repo no repos.yaml) a partir da varredura do CLI. Use depois de `hubspec hub sync` num hub novo, quando `hubspec hub status` mostrar docs desatualizadas, ou quando o usuário pedir "documentar o repo X".
 license: MIT
 compatibility: Requer o CLI hubspec e um hub com os repos clonados em workspace/.
 metadata:
@@ -42,14 +42,26 @@ hubspec hub depends <repo> --add <outro> --via "<por onde: endpoint, evento, pac
 - O mapa do `system-overview.md` é regenerado a partir do `repos.yaml`. Não edite o trecho entre `<!-- hubspec:mapa:inicio -->` e `<!-- hubspec:mapa:fim -->`.
 - Descreva a mesma dependência também em "Dependências entre repos" (`overview.md`) e em "Dependências externas" (`interfaces.md`).
 
-## 4. Visão do sistema
+## 4. Descrição dos repos
+
+O mapa do `system-overview.md` mostra a `description` de cada repo, que vem do `repos.yaml`. Para cada repo ativo que você documentou e que está **sem** `description`, grave uma frase curta sobre o que o repo faz, tirada do "Propósito" que você escreveu no `overview.md`:
+
+```sh
+hubspec hub add <url> --name <repo> --description "<o que o repo faz, em uma frase>"
+```
+
+- Use a `url` e o `name` exatamente como estão no `repos.yaml`. Com um repo já registrado, o comando só troca a descrição.
+- **Não mude uma descrição que já existe**, mesmo que a sua pareça melhor, porque o usuário pode tê-la escrito. Se ela contradiz o código, aponte isso no resumo final.
+- Não rode o comando para um repo `archived`: o `hub add` o reativaria.
+
+## 5. Visão do sistema
 
 Em `docs/system-overview.md`, preencha ou atualize:
 
 - "O sistema": o que o sistema faz e como as peças se dividem;
 - "Fluxos entre repos": os fluxos que atravessam mais de um repo, na ordem em que passam por eles, citando os repos.
 
-## 5. Registrar
+## 6. Registrar
 
 Rode `hubspec hub document --done [repos…]`. O comando:
 
@@ -57,4 +69,4 @@ Rode `hubspec hub document --done [repos…]`. O comando:
 - grava o `.meta.json` com o commit e a branch documentados;
 - atualiza o mapa.
 
-Mostre ao usuário o que foi escrito em cada repo, as dependências que você registrou (`source: llm`) e o que ficou como inferência. Peça para ele revisar antes de fazer commit e push do hub. Não faça commit sem que ele peça.
+Mostre ao usuário o que foi escrito em cada repo, as dependências que você registrou (`source: llm`), as descrições que você gravou no `repos.yaml` e o que ficou como inferência. Peça para ele revisar antes de fazer commit e push do hub. Não faça commit sem que ele peça.
