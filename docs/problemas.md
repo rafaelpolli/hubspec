@@ -3,7 +3,7 @@
 ## Instalação
 
 **`hubspec: command not found`**
-A pasta onde você pôs o link ou o binário não está no `PATH`. Com `~/.local/bin`, acrescente `export PATH="$HOME/.local/bin:$PATH"` ao `~/.bashrc` ou ao `~/.zshrc` e abra um terminal novo.
+A pasta do comando não está no `PATH`. Pelo npm, é a pasta `bin` dentro de `npm prefix -g`. Com o link ou o binário em `~/.local/bin`, acrescente `export PATH="$HOME/.local/bin:$PATH"` ao `~/.bashrc` ou ao `~/.zshrc` e abra um terminal novo.
 
 **Erro de sintaxe ou de módulo ao rodar o `hubspec`**
 O CLI em Node precisa do Node 22.12 ou mais novo (`node --version`). Se não der para atualizar o Node, use o [binário standalone](instalacao.md#binário-standalone-sem-node).
@@ -21,9 +21,6 @@ As skills `/opsx` do projeto foram geradas pelo OpenSpec, não pelo hubspec. Iss
 
 **O agente arquivou sem verificar**
 Confira se a skill `openspec-archive-change` do projeto tem o passo "verification gate (hubspec)". Se não tiver, ela é a do OpenSpec original: rode `hubspec update`.
-
-**`hubspec init --copilot-cloud`**
-O OpenSpec gera para o agente do Copilot na nuvem um passo `npm install -g hubspec`. Esse comando ainda não funciona, porque o hubspec não está publicado no npm ([Instalar](instalacao.md)). Até ele ser publicado, não use essa opção.
 
 ## Verificação
 
