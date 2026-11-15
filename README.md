@@ -56,6 +56,7 @@ O passo a passo, com as saídas reais, está em [Primeiros passos](docs/primeiro
 - [Hub multi-repo](docs/hub.md): sistemas com vários repositórios
 - [Referência dos comandos](docs/comandos.md)
 - [Problemas comuns](docs/problemas.md)
+- [Site da documentação](site/index.html): o hub multi-repo e os fundamentos num HTML só, com busca e o exemplo ponta a ponta. Baixe o arquivo e abra no navegador.
 
 ## O OpenSpec dentro do hubspec
 
