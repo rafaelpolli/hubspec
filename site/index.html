@@ -484,19 +484,23 @@ verification.md             # relatório PASS / CONCERNS / FAIL (hubspec verify)
 <section class="page" id="instalar" data-title="Instalação" hidden>
   <p class="eyebrow">Começar</p>
   <h1>Instalação</h1>
-  <p class="lead">O hubspec já traz o OpenSpec dentro e não instala dependências. Há duas formas de distribuição.</p>
-  <div class="warn"><b>Ainda não está no npm</b><p><code>npm i -g hubspec</code> e <code>npx hubspec</code> não instalam este projeto. Não use esses comandos: o nome está livre no npm, e eles instalariam outro pacote se alguém o registrasse.</p></div>
+  <p class="lead">O hubspec já traz o OpenSpec dentro e não instala dependências. Ele vem pelo npm, ou como um binário standalone gerado a partir do código.</p>
 
   <div class="table"><table>
     <thead><tr><th>Forma</th><th>Precisa para rodar</th><th>Tamanho</th></tr></thead>
     <tbody>
-      <tr><td><strong>CLI em Node</strong>: <code>dist/cli.js</code>, um arquivo com o OpenSpec e as bibliotecas dentro</td><td>Node 22.12+</td><td>~2 MB</td></tr>
+      <tr><td><strong>Pacote npm</strong>: <code>dist/cli.js</code>, um arquivo com o OpenSpec e as bibliotecas dentro, mais os schemas e as skills</td><td>Node 22.12+</td><td>~2 MB</td></tr>
       <tr><td><strong>Binário standalone</strong>: um executável por plataforma, com schemas e skills embutidos</td><td>nada</td><td>~100 MB</td></tr>
     </tbody>
   </table></div>
-  <p>O Bun só é preciso para gerar os dois a partir do código.</p>
+  <p>O Bun só é preciso para gerar o CLI ou o binário a partir do código.</p>
 
-  <h2 id="inst-node">CLI em Node</h2>
+  <h2 id="inst-npm">Pelo npm</h2>
+  <div class="code"><pre data-lang="sh"><code>npm install -g hubspec
+hubspec --version           # 0.4.0</code></pre></div>
+  <p>O pacote não tem dependências: instalar o hubspec não baixa mais nada. Para atualizar: <code>npm install -g hubspec@latest</code>, e depois <code>hubspec update</code> em cada projeto e em cada hub, para receber as skills novas.</p>
+
+  <h2 id="inst-node">A partir do código</h2>
   <div class="code"><pre data-lang="sh"><code>git clone https://github.com/rafaelpolli/hubspec.git ~/hubspec
 cd ~/hubspec
 bun install                 # só as ferramentas de build (devDependencies)
@@ -504,7 +508,7 @@ bun run build               # gera dist/cli.js
 mkdir -p ~/.local/bin
 ln -sf ~/hubspec/dist/cli.js ~/.local/bin/hubspec
 hubspec --version           # 0.4.0</code></pre></div>
-  <p><code>~/.local/bin</code> precisa estar no <code>PATH</code>. Com o npm instalado, <code>npm install -g .</code> dentro de <code>~/hubspec</code> faz o mesmo que o link. Para atualizar: <code>cd ~/hubspec &amp;&amp; git pull &amp;&amp; bun install &amp;&amp; bun run build</code>, e depois <code>hubspec update</code> em cada projeto e em cada hub.</p>
+  <p><code>~/.local/bin</code> precisa estar no <code>PATH</code>. Para atualizar: <code>cd ~/hubspec &amp;&amp; git pull &amp;&amp; bun install &amp;&amp; bun run build</code>, e depois <code>hubspec update</code> em cada projeto e em cada hub.</p>
 
   <h2 id="inst-binario">Binário standalone</h2>
   <div class="code"><pre data-lang="sh"><code>cd ~/hubspec
@@ -515,7 +519,7 @@ bun scripts/build.ts --binary linux-arm64 darwin-arm64 windows-x64   # outras pl
 
   <h2 id="inst-plugin">Plugin do Claude Code</h2>
   <div class="code"><pre data-lang="plain"><code>/plugin install hubspec --marketplace rafaelpolli/hubspec</code></pre></div>
-  <p>Traz as skills <code>hubspec-*</code> e os comandos <code>/hubspec:hub:*</code> para todos os projetos, sem instalar o CLI. Antes do Claude Code 2.1.275: <code>/plugin marketplace add rafaelpolli/hubspec</code> e <code>/plugin install hubspec@hubspec</code>. Com o repositório privado, o Claude Code precisa cloná-lo com as credenciais Git da máquina (<code>gh auth setup-git</code>).</p>
+  <p>Traz as skills <code>hubspec-*</code> e os comandos <code>/hubspec:hub:*</code> para todos os projetos, sem instalar o CLI. Antes do Claude Code 2.1.275: <code>/plugin marketplace add rafaelpolli/hubspec</code> e <code>/plugin install hubspec@hubspec</code>.</p>
 
   <h2 id="inst-global">Config global e convivência com o OpenSpec</h2>
   <div class="table"><table>
@@ -533,11 +537,10 @@ bun scripts/build.ts --binary linux-arm64 darwin-arm64 windows-x64   # outras pl
   <h2 id="inst-problemas">Problemas comuns</h2>
   <div class="table"><table>
     <tbody>
-      <tr><td><code>hubspec: command not found</code></td><td>a pasta do link ou do binário não está no <code>PATH</code></td></tr>
+      <tr><td><code>hubspec: command not found</code></td><td>a pasta do comando não está no <code>PATH</code>; pelo npm, é a pasta <code>bin</code> de <code>npm prefix -g</code></td></tr>
       <tr><td>erro de sintaxe ou de módulo ao rodar</td><td>Node anterior ao 22.12; atualize ou use o binário</td></tr>
       <tr><td>o agente diz que o hubspec não existe</td><td>o agente usa o <code>PATH</code> do terminal dele; reinicie o agente depois de instalar</td></tr>
       <tr><td>o agente rodou <code>openspec …</code></td><td>as skills foram geradas pelo OpenSpec; rode <code>hubspec update</code></td></tr>
-      <tr><td><code>hubspec init --copilot-cloud</code></td><td>gera um passo <code>npm install -g hubspec</code>, que ainda não funciona; não use até o hubspec estar no npm</td></tr>
     </tbody>
   </table></div>
 </section>

@@ -4,7 +4,7 @@ Instalar o hubspec não traz mais nada: ele já tem o OpenSpec dentro e não dep
 
 | Forma | Precisa para rodar | Tamanho |
 |---|---|---|
-| **CLI em Node**: `dist/cli.js`, um arquivo só com o OpenSpec e as bibliotecas dentro | Node 22.12 ou mais novo | ~2 MB |
+| **Pacote npm**: `dist/cli.js`, um arquivo só com o OpenSpec e as bibliotecas dentro, mais os schemas e as skills | Node 22.12 ou mais novo | ~2 MB |
 | **Binário standalone**: um executável por plataforma, com os schemas e as skills embutidos | nada | ~100 MB |
 
 Também são usados:
@@ -13,9 +13,24 @@ Também são usados:
 - **gh CLI autenticado**: só para abrir as PRs do hub (`hubspec hub pr`);
 - **Bun**: só para gerar o `dist/cli.js` ou o binário a partir do código. Não é necessário para usar o hubspec depois.
 
-> O hubspec ainda não está publicado no npm. Por isso `npm i -g hubspec` e `npx hubspec` **não** instalam este projeto. Não use esses comandos: o nome está livre no npm, e eles instalariam outro pacote se alguém registrasse esse nome.
+## Pelo npm (recomendado)
 
-## CLI em Node (recomendado)
+```sh
+npm install -g hubspec
+hubspec --version           # 0.4.0
+```
+
+O pacote não tem dependências: instalar o hubspec não baixa mais nada.
+
+Para atualizar:
+
+```sh
+npm install -g hubspec@latest
+```
+
+Depois, rode `hubspec update` em cada projeto para receber as skills novas.
+
+## A partir do código
 
 ```sh
 git clone https://github.com/rafaelpolli/hubspec.git ~/hubspec
@@ -27,7 +42,7 @@ ln -sf ~/hubspec/dist/cli.js ~/.local/bin/hubspec
 hubspec --version           # 0.4.0
 ```
 
-A pasta `~/.local/bin` precisa estar no `PATH`. Se não estiver, acrescente `export PATH="$HOME/.local/bin:$PATH"` ao `~/.bashrc` ou ao `~/.zshrc`. Com o npm instalado, `npm install -g .` dentro de `~/hubspec` faz o mesmo que o link.
+A pasta `~/.local/bin` precisa estar no `PATH`. Se não estiver, acrescente `export PATH="$HOME/.local/bin:$PATH"` ao `~/.bashrc` ou ao `~/.zshrc`. Com o npm, `npm install -g .` dentro de `~/hubspec` faz o mesmo que o link.
 
 Para atualizar, gere de novo; o link continua apontando para o arquivo novo:
 
@@ -57,15 +72,13 @@ Na primeira vez que precisa deles, o binário extrai os schemas e as skills para
 
 ## Plugin do Claude Code (opcional)
 
-O plugin deixa as skills `hubspec-*` e os comandos do hub (`/hubspec:hub:*`) disponíveis em todos os projetos, sem precisar rodar `hubspec init` em cada um. Ele não instala o CLI: instale o `hubspec` antes, como acima.
+O plugin deixa as skills `hubspec-*` e os comandos do hub (`/hubspec:hub:*`) disponíveis em todos os projetos, sem precisar rodar `hubspec init` em cada um. Ele não instala o CLI: instale o `hubspec` antes, pelo npm ou de outra forma acima.
 
 ```
 /plugin install hubspec --marketplace rafaelpolli/hubspec
 ```
 
 Antes do Claude Code 2.1.275, são dois passos: `/plugin marketplace add rafaelpolli/hubspec` e depois `/plugin install hubspec@hubspec`.
-
-Se o repositório for privado, o Claude Code precisa conseguir cloná-lo com as credenciais do Git desta máquina.
 
 ## Completions do shell
 
@@ -86,7 +99,7 @@ Num mesmo projeto, use só um dos dois para gerar os arquivos:
 ## Desinstalar
 
 ```sh
-rm ~/.local/bin/hubspec
+npm uninstall -g hubspec                            # pelo npm; ou rm ~/.local/bin/hubspec
 rm -rf ~/.config/hubspec ~/.local/share/hubspec     # config e dados globais, se quiser
 ```
 

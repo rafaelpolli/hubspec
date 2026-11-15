@@ -15,15 +15,13 @@ O formato é o do OpenSpec. Os arquivos extras (`exploration.md`, `decisions.md`
 
 ## Instalar
 
-O hubspec ainda não está no npm. Por enquanto, ele é instalado a partir deste repositório, com o Bun só para gerar o build ([outras formas](docs/instalacao.md)):
+Com o Node 22.12 ou mais novo:
 
 ```sh
-git clone https://github.com/rafaelpolli/hubspec.git ~/hubspec
-cd ~/hubspec && bun install && bun run build
-ln -sf ~/hubspec/dist/cli.js ~/.local/bin/hubspec      # precisa do Node 22.12+
+npm install -g hubspec
 ```
 
-Sem Node, use o binário standalone: `bun run build:bin` gera `dist-bin/hubspec-<plataforma>`, um executável com tudo dentro.
+O pacote não tem dependências: o OpenSpec e as bibliotecas já vêm dentro dele. Sem Node, use o binário standalone, um executável com tudo dentro, gerado a partir do código. Essa forma e a instalação a partir do código estão em [Instalar](docs/instalacao.md).
 
 No Claude Code, as skills também vêm como plugin. O plugin não traz o CLI, que continua precisando ser instalado como acima:
 

@@ -4,6 +4,27 @@
   "description": "OpenSpec num CLI só, com o fluxo do OpenSpec Studio (exploração, decisões, verificação e archive com portão) e hubs multi-repo, para Claude Code, Devin, GitHub Copilot, OpenCode e as demais ferramentas do OpenSpec.",
   "type": "module",
   "license": "MIT",
+  "author": "rafaelpolli",
+  "homepage": "https://github.com/rafaelpolli/hubspec#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rafaelpolli/hubspec.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rafaelpolli/hubspec/issues"
+  },
+  "keywords": [
+    "openspec",
+    "spec-driven",
+    "sdd",
+    "claude-code",
+    "github-copilot",
+    "opencode",
+    "devin",
+    "ai-agents",
+    "multi-repo",
+    "cli"
+  ],
   "bin": {
     "hubspec": "dist/cli.js"
   },
